@@ -14,10 +14,10 @@ const Calculator = () => {
   const [results, setResults] = useState<any>(null);
 
   const goodsTypes = [
+    { id: 'notebooks', name: 'Notebooks', multiplier: 1 },
     { id: 'paper', name: 'Paper (Reams)', multiplier: 1 },
     { id: 'pens', name: 'Pens (Boxes)', multiplier: 12 },
     { id: 'toner', name: 'Toner Cartridges', multiplier: 1 },
-    { id: 'notebooks', name: 'Notebooks', multiplier: 1 },
   ];
 
   const calculateTotal = () => {
@@ -110,7 +110,7 @@ Calculations:
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="goodsType">Type of Goods</Label>
+              <Label htmlFor="goodsType">Name Unit</Label>
               <Select value={goodsType} onValueChange={setGoodsType}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select goods type" />

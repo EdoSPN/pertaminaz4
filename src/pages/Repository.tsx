@@ -8,12 +8,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Database, Upload, Search, FileText } from 'lucide-react';
+import { Database, Upload, Search, FileText, Trash2, Edit, MessageSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -28,7 +29,22 @@ const Repository = () => {
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [reviewNotes, setReviewNotes] = useState('');
   const [uploading, setUploading] = useState(false);
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  
+  // Upload dialog states
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [fileToUpload, setFileToUpload] = useState<File | null>(null);
+  const [fileSubject, setFileSubject] = useState('');
+  
+  // Comment dialog states
+  const [commentDialogOpen, setCommentDialogOpen] = useState(false);
+  const [comment, setComment] = useState('');
+  const [comments, setComments] = useState<any[]>([]);
+  const [selectedFileForComment, setSelectedFileForComment] = useState<any>(null);
+  
+  // Replace dialog states
+  const [replaceDialogOpen, setReplaceDialogOpen] = useState(false);
+  const [fileToReplace, setFileToReplace] = useState<File | null>(null);
+  const [fileToReplaceId, setFileToReplaceId] = useState<string>('');
 
   useEffect(() => {
     fetchUserRole();
@@ -67,19 +83,24 @@ const Repository = () => {
     setFiles(data || []);
   };
 
-  const handleUpload = async () => {
-    if (!uploadFile || !user) return;
+  const handleUploadSubmit = async () => {
+    if (!fileToUpload || !fileSubject.trim() || !user) {
+      toast({
+        title: 'Error',
+        description: 'Please provide both a file and subject',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setUploading(true);
-
     try {
-      // In a real app, you would upload to Supabase Storage
-      // For now, we'll just store metadata
       const { error } = await supabase.from('files').insert({
-        file_name: uploadFile.name,
-        file_path: `/uploads/${uploadFile.name}`,
-        file_type: uploadFile.type,
+        file_name: fileSubject,
+        file_path: `/uploads/${fileToUpload.name}`,
+        file_type: fileToUpload.type,
         uploaded_by: user.id,
+        review_status: 'pending',
       });
 
       if (error) throw error;
@@ -89,7 +110,74 @@ const Repository = () => {
         description: 'File uploaded successfully',
       });
 
-      setUploadFile(null);
+      setUploadDialogOpen(false);
+      setFileToUpload(null);
+      setFileSubject('');
+      fetchFiles();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDelete = async (fileId: string) => {
+    try {
+      const { error } = await supabase
+        .from('files')
+        .delete()
+        .eq('id', fileId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: 'File deleted successfully',
+      });
+      fetchFiles();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleReplaceSubmit = async () => {
+    if (!fileToReplace || !fileToReplaceId || !user) {
+      toast({
+        title: 'Error',
+        description: 'Please select a file to replace',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const { error } = await supabase
+        .from('files')
+        .update({
+          file_path: `/uploads/${fileToReplace.name}`,
+          file_type: fileToReplace.type,
+          uploaded_at: new Date().toISOString(),
+        })
+        .eq('id', fileToReplaceId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: 'File replaced successfully',
+      });
+      setReplaceDialogOpen(false);
+      setFileToReplace(null);
+      setFileToReplaceId('');
       fetchFiles();
     } catch (error: any) {
       toast({
@@ -152,9 +240,8 @@ const Repository = () => {
 
       toast({
         title: 'Success',
-        description: 'File approved',
+        description: 'File approved successfully',
       });
-
       fetchFiles();
     } catch (error: any) {
       toast({
@@ -163,6 +250,69 @@ const Repository = () => {
         variant: 'destructive',
       });
     }
+  };
+
+  const fetchComments = async (fileId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('file_comments')
+        .select('*')
+        .eq('file_id', fileId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setComments(data || []);
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!comment.trim() || !selectedFileForComment || !user) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a comment',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('file_comments')
+        .insert([
+          {
+            file_id: selectedFileForComment.id,
+            user_id: user.id,
+            comment: comment,
+          },
+        ]);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: 'Comment added successfully',
+      });
+      setComment('');
+      fetchComments(selectedFileForComment.id);
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const openCommentDialog = (file: any) => {
+    setSelectedFileForComment(file);
+    setCommentDialogOpen(true);
+    fetchComments(file.id);
   };
 
   const getStatusColor = (status: string) => {
@@ -186,40 +336,57 @@ const Repository = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Database className="h-8 w-8" />
-          Data Repository
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          Upload, review, and approve data files
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <Database className="h-8 w-8" />
+            Data Repository
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Upload, review, and approve data files
+          </p>
+        </div>
+        {(userRole === 'admin' || userRole === 'user') && (
+          <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Upload className="mr-2 h-4 w-4" />
+                Upload File
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Upload New File</DialogTitle>
+                <DialogDescription>Upload a file to the data repository</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="subject">Subject</Label>
+                  <Input
+                    id="subject"
+                    placeholder="Enter file subject/name"
+                    value={fileSubject}
+                    onChange={(e) => setFileSubject(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="file">File</Label>
+                  <Input
+                    id="file"
+                    type="file"
+                    onChange={(e) => setFileToUpload(e.target.files?.[0] || null)}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button onClick={handleUploadSubmit} disabled={uploading}>
+                  {uploading ? 'Uploading...' : 'Upload'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
-
-      {userRole === 'admin' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="h-5 w-5" />
-              Upload File
-            </CardTitle>
-            <CardDescription>Upload new files to the repository</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="file">Select File</Label>
-              <Input
-                id="file"
-                type="file"
-                onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-              />
-            </div>
-            <Button onClick={handleUpload} disabled={!uploadFile || uploading}>
-              {uploading ? 'Uploading...' : 'Upload File'}
-            </Button>
-          </CardContent>
-        </Card>
-      )}
 
       <Card>
         <CardHeader>
@@ -267,6 +434,52 @@ const Repository = () => {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right space-x-2">
+                        {user?.id === file.uploaded_by && (
+                          <>
+                            <Dialog 
+                              open={replaceDialogOpen && fileToReplaceId === file.id} 
+                              onOpenChange={(open) => {
+                                setReplaceDialogOpen(open);
+                                if (open) setFileToReplaceId(file.id);
+                                else setFileToReplaceId('');
+                              }}
+                            >
+                              <DialogTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent>
+                                <DialogHeader>
+                                  <DialogTitle>Replace File</DialogTitle>
+                                  <DialogDescription>
+                                    Upload a new version of {file.file_name}
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <div>
+                                  <Label htmlFor="replace-file">New File</Label>
+                                  <Input
+                                    id="replace-file"
+                                    type="file"
+                                    onChange={(e) => setFileToReplace(e.target.files?.[0] || null)}
+                                  />
+                                </div>
+                                <DialogFooter>
+                                  <Button onClick={handleReplaceSubmit} disabled={uploading}>
+                                    {uploading ? 'Replacing...' : 'Replace'}
+                                  </Button>
+                                </DialogFooter>
+                              </DialogContent>
+                            </Dialog>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDelete(file.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
                         {userRole === 'reviewer' && file.review_status === 'pending' && (
                           <Dialog>
                             <DialogTrigger asChild>
@@ -315,6 +528,15 @@ const Repository = () => {
                             Approve
                           </Button>
                         )}
+                        {(userRole === 'admin' || userRole === 'approver') && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openCommentDialog(file)}
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
@@ -324,6 +546,50 @@ const Repository = () => {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={commentDialogOpen} onOpenChange={setCommentDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Comments for {selectedFileForComment?.file_name}</DialogTitle>
+            <DialogDescription>View and add comments for this file</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="new-comment">Add Comment</Label>
+              <Textarea
+                id="new-comment"
+                placeholder="Enter your comment..."
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                className="mt-2"
+                rows={3}
+              />
+              <Button onClick={handleAddComment} className="mt-2">
+                Add Comment
+              </Button>
+            </div>
+            <div className="space-y-3">
+              <h4 className="font-semibold">Comment History</h4>
+              <div className="max-h-80 overflow-y-auto space-y-3">
+                {comments.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No comments yet</p>
+                ) : (
+                  comments.map((c) => (
+                    <Card key={c.id}>
+                      <CardContent className="pt-4">
+                        <p className="text-sm">{c.comment}</p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {new Date(c.created_at).toLocaleString()}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

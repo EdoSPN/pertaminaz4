@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      file_comments: {
+        Row: {
+          comment: string
+          created_at: string
+          file_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          comment: string
+          created_at?: string
+          file_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          comment?: string
+          created_at?: string
+          file_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "file_comments_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       files: {
         Row: {
           approved_at: string | null

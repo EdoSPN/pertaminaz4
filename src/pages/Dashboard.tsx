@@ -15,13 +15,13 @@ const Dashboard = () => {
       if (!user) return;
 
       // Fetch user role
-      const { data: roleData } = await supabase
+      const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (roleData) {
+      if (roleData && !roleError) {
         setUserRole(roleData.role);
       }
 

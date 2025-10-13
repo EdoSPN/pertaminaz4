@@ -14,6 +14,7 @@ import Dashboard from "./pages/Dashboard";
 import PowerBI from "./pages/PowerBI";
 import Calculator from "./pages/Calculator";
 import Repository from "./pages/Repository";
+import UserManagement from "./pages/UserManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -81,6 +82,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <Repository />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/users"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <UserManagement />
                   </AppLayout>
                 </ProtectedRoute>
               }

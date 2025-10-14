@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Database, Upload, Search, FileText, Trash2, Edit, MessageSquare } from 'lucide-react';
+import { Database, Upload, Search, FileText, Trash2, Edit, MessageSquare, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -95,9 +95,20 @@ const Repository = () => {
 
     setUploading(true);
     try {
+      // Upload file to storage
+      const fileExt = fileToUpload.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('repository-files')
+        .upload(fileName, fileToUpload);
+
+      if (uploadError) throw uploadError;
+
+      // Insert file record to database
       const { error } = await supabase.from('files').insert({
         file_name: fileSubject,
-        file_path: `/uploads/${fileToUpload.name}`,
+        file_path: fileName,
         file_type: fileToUpload.type,
         uploaded_by: user.id,
         review_status: 'pending',
@@ -125,8 +136,16 @@ const Repository = () => {
     }
   };
 
-  const handleDelete = async (fileId: string) => {
+  const handleDelete = async (fileId: string, filePath: string) => {
     try {
+      // Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from('repository-files')
+        .remove([filePath]);
+
+      if (storageError) throw storageError;
+
+      // Delete from database
       const { error } = await supabase
         .from('files')
         .delete()
@@ -160,10 +179,29 @@ const Repository = () => {
 
     setUploading(true);
     try {
+      // Find the old file to delete it from storage
+      const oldFile = files.find(f => f.id === fileToReplaceId);
+      if (oldFile?.file_path) {
+        await supabase.storage
+          .from('repository-files')
+          .remove([oldFile.file_path]);
+      }
+
+      // Upload new file to storage
+      const fileExt = fileToReplace.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('repository-files')
+        .upload(fileName, fileToReplace);
+
+      if (uploadError) throw uploadError;
+
+      // Update database record
       const { error } = await supabase
         .from('files')
         .update({
-          file_path: `/uploads/${fileToReplace.name}`,
+          file_path: fileName,
           file_type: fileToReplace.type,
           uploaded_at: new Date().toISOString(),
         })
@@ -315,6 +353,37 @@ const Repository = () => {
     fetchComments(file.id);
   };
 
+  const handleDownload = async (file: any) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('repository-files')
+        .download(file.file_path);
+
+      if (error) throw error;
+
+      // Create a download link
+      const url = window.URL.createObjectURL(data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.file_name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: 'Success',
+        description: 'File downloaded successfully',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending':
@@ -434,6 +503,15 @@ const Repository = () => {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right space-x-2">
+                        {userRole !== 'viewer' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDownload(file)}
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        )}
                         {user?.id === file.uploaded_by && (
                           <>
                             <Dialog 
@@ -474,7 +552,7 @@ const Repository = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleDelete(file.id)}
+                              onClick={() => handleDelete(file.id, file.file_path)}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>

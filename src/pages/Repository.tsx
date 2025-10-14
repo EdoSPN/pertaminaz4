@@ -54,13 +54,13 @@ const Repository = () => {
   const fetchUserRole = async () => {
     if (!user) return;
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
-    if (data) {
+    if (data && !error) {
       setUserRole(data.role);
     }
   };

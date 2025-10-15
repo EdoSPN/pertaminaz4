@@ -91,6 +91,57 @@ export type Database = {
         }
         Relationships: []
       }
+      monitoring_data: {
+        Row: {
+          actual_submit_ifa: string | null
+          actual_submit_ifb: string | null
+          actual_submit_ifr: string | null
+          approval_status: Database["public"]["Enums"]["approval_status"]
+          created_at: string | null
+          file_name: string
+          id: string
+          pic: string | null
+          status_category: Database["public"]["Enums"]["status_category"]
+          status_description: Database["public"]["Enums"]["status_description"]
+          target_submit_ifa: string | null
+          target_submit_ifb: string | null
+          target_submit_ifr: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          actual_submit_ifa?: string | null
+          actual_submit_ifb?: string | null
+          actual_submit_ifr?: string | null
+          approval_status?: Database["public"]["Enums"]["approval_status"]
+          created_at?: string | null
+          file_name: string
+          id?: string
+          pic?: string | null
+          status_category?: Database["public"]["Enums"]["status_category"]
+          status_description?: Database["public"]["Enums"]["status_description"]
+          target_submit_ifa?: string | null
+          target_submit_ifb?: string | null
+          target_submit_ifr?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          actual_submit_ifa?: string | null
+          actual_submit_ifb?: string | null
+          actual_submit_ifr?: string | null
+          approval_status?: Database["public"]["Enums"]["approval_status"]
+          created_at?: string | null
+          file_name?: string
+          id?: string
+          pic?: string | null
+          status_category?: Database["public"]["Enums"]["status_category"]
+          status_description?: Database["public"]["Enums"]["status_description"]
+          target_submit_ifa?: string | null
+          target_submit_ifb?: string | null
+          target_submit_ifr?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -151,6 +202,9 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "reviewer" | "approver" | "viewer" | "user"
+      approval_status: "Approved" | "Denied" | "Pending"
+      status_category: "IFR" | "IFA" | "IFB"
+      status_description: "Not Yet" | "In-Progress" | "Complete"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -279,6 +333,9 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "reviewer", "approver", "viewer", "user"],
+      approval_status: ["Approved", "Denied", "Pending"],
+      status_category: ["IFR", "IFA", "IFB"],
+      status_description: ["Not Yet", "In-Progress", "Complete"],
     },
   },
 } as const

@@ -146,12 +146,16 @@ export default function Monitoring() {
                 </div>
                 <div>
                   <Label htmlFor="pic">PIC</Label>
-                  <Input
-                    id="pic"
-                    value={pic}
-                    onChange={(e) => setPic(e.target.value)}
-                    placeholder="Enter PIC (optional)"
-                  />
+                  <Select value={pic} onValueChange={setPic}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select PIC" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Slamet">Slamet</SelectItem>
+                      <SelectItem value="Eka">Eka</SelectItem>
+                      <SelectItem value="Edo">Edo</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <Button onClick={handleAddNew} className="w-full">
                   Add

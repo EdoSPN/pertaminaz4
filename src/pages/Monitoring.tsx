@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus } from 'lucide-react';
+import { Plus, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 interface MonitoringData {
@@ -34,6 +34,7 @@ export default function Monitoring() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [pic, setPic] = useState('');
   const [fileName, setFileName] = useState('');
+  const [editedRows, setEditedRows] = useState<Record<string, Partial<MonitoringData>>>({});
   useEffect(() => {
     fetchUserRole();
     fetchMonitoringData();
@@ -63,31 +64,47 @@ export default function Monitoring() {
     setLoading(false);
   };
   const canEdit = userRole === 'admin' || userRole === 'user';
-  const handleStatusCategoryChange = async (id: string, value: string) => {
+  
+  const handleStatusCategoryChange = (id: string, value: string) => {
     if (!canEdit) return;
-    const {
-      error
-    } = await supabase.from('monitoring_data').update({
-      status_category: value as 'IFR' | 'IFA' | 'IFB'
-    }).eq('id', id);
-    if (error) {
-      toast.error('Failed to update status category');
-    } else {
-      toast.success('Status category updated');
-      fetchMonitoringData();
-    }
+    setEditedRows(prev => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        status_category: value as 'IFR' | 'IFA' | 'IFB'
+      }
+    }));
   };
-  const handleStatusDescriptionChange = async (id: string, value: string) => {
+  
+  const handleStatusDescriptionChange = (id: string, value: string) => {
     if (!canEdit) return;
-    const {
-      error
-    } = await supabase.from('monitoring_data').update({
-      status_description: value as 'Not Yet' | 'In-Progress' | 'Complete'
-    }).eq('id', id);
+    setEditedRows(prev => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        status_description: value as 'Not Yet' | 'In-Progress' | 'Complete'
+      }
+    }));
+  };
+
+  const handleSaveRow = async (id: string) => {
+    const updates = editedRows[id];
+    if (!updates) return;
+
+    const { error } = await supabase
+      .from('monitoring_data')
+      .update(updates)
+      .eq('id', id);
+
     if (error) {
-      toast.error('Failed to update status description');
+      toast.error('Failed to save changes');
     } else {
-      toast.success('Status description updated');
+      toast.success('Changes saved successfully');
+      setEditedRows(prev => {
+        const newState = { ...prev };
+        delete newState[id];
+        return newState;
+      });
       fetchMonitoringData();
     }
   };
@@ -182,6 +199,7 @@ export default function Monitoring() {
               <TableHead>Actual Submit (IFA)</TableHead>
               <TableHead>Actual Submit (IFB)</TableHead>
               <TableHead>Approval</TableHead>
+              {canEdit && <TableHead>Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -193,11 +211,15 @@ export default function Monitoring() {
                 <TableCell colSpan={12} className="text-center py-8">
                   No data available
                 </TableCell>
-              </TableRow> : monitoringData.map((item, index) => <TableRow key={item.id}>
+              </TableRow> : monitoringData.map((item, index) => {
+                const hasChanges = editedRows[item.id];
+                const currentData = hasChanges ? { ...item, ...editedRows[item.id] } : item;
+                
+                return <TableRow key={item.id}>
                   <TableCell>{index + 1}</TableCell>
                   <TableCell>{item.file_name}</TableCell>
                   <TableCell>
-                    <Select value={item.status_category} onValueChange={value => handleStatusCategoryChange(item.id, value)} disabled={!canEdit}>
+                    <Select value={currentData.status_category} onValueChange={value => handleStatusCategoryChange(item.id, value)} disabled={!canEdit}>
                       <SelectTrigger className="w-28">
                         <SelectValue />
                       </SelectTrigger>
@@ -209,7 +231,7 @@ export default function Monitoring() {
                     </Select>
                   </TableCell>
                   <TableCell>
-                    <Select value={item.status_description} onValueChange={value => handleStatusDescriptionChange(item.id, value)} disabled={!canEdit}>
+                    <Select value={currentData.status_description} onValueChange={value => handleStatusDescriptionChange(item.id, value)} disabled={!canEdit}>
                       <SelectTrigger className="w-32">
                         <SelectValue />
                       </SelectTrigger>
@@ -232,7 +254,18 @@ export default function Monitoring() {
                       {item.approval_status}
                     </span>
                   </TableCell>
-                </TableRow>)}
+                  {canEdit && (
+                    <TableCell>
+                      {hasChanges && (
+                        <Button size="sm" onClick={() => handleSaveRow(item.id)}>
+                          <Save className="h-4 w-4 mr-1" />
+                          Save
+                        </Button>
+                      )}
+                    </TableCell>
+                  )}
+                </TableRow>
+              })}
           </TableBody>
         </Table>
       </div>

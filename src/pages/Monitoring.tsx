@@ -5,6 +5,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -29,6 +31,9 @@ export default function Monitoring() {
   const [monitoringData, setMonitoringData] = useState<MonitoringData[]>([]);
   const [userRole, setUserRole] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [pic, setPic] = useState('');
+  const [fileName, setFileName] = useState('');
   useEffect(() => {
     fetchUserRole();
     fetchMonitoringData();
@@ -86,6 +91,30 @@ export default function Monitoring() {
       fetchMonitoringData();
     }
   };
+  const handleAddNew = async () => {
+    if (!fileName.trim()) {
+      toast.error('File name is required');
+      return;
+    }
+
+    const { error } = await supabase
+      .from('monitoring_data')
+      .insert({
+        file_name: fileName,
+        pic: pic.trim() || null,
+      });
+
+    if (error) {
+      toast.error('Failed to add monitoring data');
+    } else {
+      toast.success('Monitoring data added successfully');
+      setDialogOpen(false);
+      setPic('');
+      setFileName('');
+      fetchMonitoringData();
+    }
+  };
+
   const formatDate = (date: string | null) => {
     if (!date) return '-';
     return format(new Date(date), 'dd/MM/yyyy');
@@ -93,10 +122,44 @@ export default function Monitoring() {
   return <div className="container mx-auto py-8 px-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Data Monitoring</h1>
-        {canEdit && <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Add New
-          </Button>}
+        {canEdit && (
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Add New
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add New Monitoring Data</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="fileName">File Name</Label>
+                  <Input
+                    id="fileName"
+                    value={fileName}
+                    onChange={(e) => setFileName(e.target.value)}
+                    placeholder="Enter file name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="pic">PIC</Label>
+                  <Input
+                    id="pic"
+                    value={pic}
+                    onChange={(e) => setPic(e.target.value)}
+                    placeholder="Enter PIC (optional)"
+                  />
+                </div>
+                <Button onClick={handleAddNew} className="w-full">
+                  Add
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       <div className="rounded-md border">

@@ -105,8 +105,8 @@ export default function Monitoring() {
             <TableRow>
               <TableHead className="w-12">No</TableHead>
               <TableHead>File Name</TableHead>
-              
-              <TableHead>Status</TableHead>
+              <TableHead>Status Category</TableHead>
+              <TableHead>Status Description</TableHead>
               <TableHead>PIC</TableHead>
               <TableHead>Target Submit (IFR)</TableHead>
               <TableHead>Target Submit (IFA)</TableHead>

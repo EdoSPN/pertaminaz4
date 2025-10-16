@@ -76,16 +76,6 @@ export default function Monitoring() {
     }));
   };
   
-  const handleStatusDescriptionChange = (id: string, value: string) => {
-    if (!canEdit) return;
-    setEditedRows(prev => ({
-      ...prev,
-      [id]: {
-        ...prev[id],
-        status_description: value as 'Not Yet' | 'In-Progress' | 'Complete'
-      }
-    }));
-  };
 
   const handleSaveRow = async (id: string) => {
     const updates = editedRows[id];
@@ -230,18 +220,7 @@ export default function Monitoring() {
                       </SelectContent>
                     </Select>
                   </TableCell>
-                  <TableCell>
-                    <Select value={currentData.status_description} onValueChange={value => handleStatusDescriptionChange(item.id, value)} disabled={!canEdit}>
-                      <SelectTrigger className="w-32">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Not Yet">Not Yet</SelectItem>
-                        <SelectItem value="In-Progress">In-Progress</SelectItem>
-                        <SelectItem value="Complete">Complete</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
+                  <TableCell>{item.status_description}</TableCell>
                   <TableCell>{item.pic || '-'}</TableCell>
                   <TableCell>{formatDate(item.target_submit_ifr)}</TableCell>
                   <TableCell>{formatDate(item.target_submit_ifa)}</TableCell>

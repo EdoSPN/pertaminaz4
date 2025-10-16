@@ -182,28 +182,37 @@ export default function Monitoring() {
               <TableHead>Status Category</TableHead>
               <TableHead>Status Description</TableHead>
               <TableHead>PIC</TableHead>
-              <TableHead>Target Submit (IFR)</TableHead>
-              <TableHead>Target Submit (IFA)</TableHead>
-              <TableHead>Target Submit (IFB)</TableHead>
-              <TableHead>Actual Submit (IFR)</TableHead>
-              <TableHead>Actual Submit (IFA)</TableHead>
-              <TableHead>Actual Submit (IFB)</TableHead>
+              <TableHead>Target Submit</TableHead>
+              <TableHead>Actual Submit</TableHead>
               <TableHead>Approval</TableHead>
               {canEdit && <TableHead>Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? <TableRow>
-                <TableCell colSpan={12} className="text-center py-8">
+                <TableCell colSpan={9} className="text-center py-8">
                   Loading...
                 </TableCell>
               </TableRow> : monitoringData.length === 0 ? <TableRow>
-                <TableCell colSpan={12} className="text-center py-8">
+                <TableCell colSpan={9} className="text-center py-8">
                   No data available
                 </TableCell>
               </TableRow> : monitoringData.map((item, index) => {
                 const hasChanges = editedRows[item.id];
                 const currentData = hasChanges ? { ...item, ...editedRows[item.id] } : item;
+                
+                // Determine which dates to show based on status_category
+                const targetDate = currentData.status_category === 'IFR' 
+                  ? item.target_submit_ifr 
+                  : currentData.status_category === 'IFA' 
+                  ? item.target_submit_ifa 
+                  : item.target_submit_ifb;
+                
+                const actualDate = currentData.status_category === 'IFR' 
+                  ? item.actual_submit_ifr 
+                  : currentData.status_category === 'IFA' 
+                  ? item.actual_submit_ifa 
+                  : item.actual_submit_ifb;
                 
                 return <TableRow key={item.id}>
                   <TableCell>{index + 1}</TableCell>
@@ -222,12 +231,8 @@ export default function Monitoring() {
                   </TableCell>
                   <TableCell>{item.status_description}</TableCell>
                   <TableCell>{item.pic || '-'}</TableCell>
-                  <TableCell>{formatDate(item.target_submit_ifr)}</TableCell>
-                  <TableCell>{formatDate(item.target_submit_ifa)}</TableCell>
-                  <TableCell>{formatDate(item.target_submit_ifb)}</TableCell>
-                  <TableCell>{formatDate(item.actual_submit_ifr)}</TableCell>
-                  <TableCell>{formatDate(item.actual_submit_ifa)}</TableCell>
-                  <TableCell>{formatDate(item.actual_submit_ifb)}</TableCell>
+                  <TableCell>{formatDate(targetDate)}</TableCell>
+                  <TableCell>{formatDate(actualDate)}</TableCell>
                   <TableCell>
                     <span className={`px-2 py-1 rounded text-xs ${item.approval_status === 'Approved' ? 'bg-green-100 text-green-800' : item.approval_status === 'Denied' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
                       {item.approval_status}

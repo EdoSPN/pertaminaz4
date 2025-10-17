@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Save } from 'lucide-react';
+import { Plus, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 interface MonitoringData {
@@ -32,9 +32,12 @@ export default function Monitoring() {
   const [userRole, setUserRole] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [pic, setPic] = useState('');
   const [fileName, setFileName] = useState('');
-  const [editedRows, setEditedRows] = useState<Record<string, Partial<MonitoringData>>>({});
+  const [currentEditItem, setCurrentEditItem] = useState<MonitoringData | null>(null);
+  const [editStatusDescription, setEditStatusDescription] = useState<'Not Yet' | 'In-Progress' | 'Complete'>('Not Yet');
+  const [editActualSubmit, setEditActualSubmit] = useState('');
   useEffect(() => {
     fetchUserRole();
     fetchMonitoringData();
@@ -65,36 +68,64 @@ export default function Monitoring() {
   };
   const canEdit = userRole === 'admin' || userRole === 'user';
   
-  const handleStatusCategoryChange = (id: string, value: string) => {
+  const handleStatusCategoryChange = async (id: string, value: 'IFR' | 'IFA' | 'IFB') => {
     if (!canEdit) return;
-    setEditedRows(prev => ({
-      ...prev,
-      [id]: {
-        ...prev[id],
-        status_category: value as 'IFR' | 'IFA' | 'IFB'
-      }
-    }));
-  };
-  
 
-  const handleSaveRow = async (id: string) => {
-    const updates = editedRows[id];
-    if (!updates) return;
+    const { error } = await supabase
+      .from('monitoring_data')
+      .update({ status_category: value })
+      .eq('id', id);
+
+    if (error) {
+      toast.error('Failed to update status category');
+    } else {
+      toast.success('Status category updated');
+      fetchMonitoringData();
+    }
+  };
+
+  const handleOpenEditDialog = (item: MonitoringData) => {
+    setCurrentEditItem(item);
+    setEditStatusDescription(item.status_description);
+    
+    // Get the actual submit date based on current status category
+    const actualDate = item.status_category === 'IFR' 
+      ? item.actual_submit_ifr 
+      : item.status_category === 'IFA' 
+      ? item.actual_submit_ifa 
+      : item.actual_submit_ifb;
+    
+    setEditActualSubmit(actualDate ? format(new Date(actualDate), 'yyyy-MM-dd') : '');
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!currentEditItem) return;
+
+    const updates: Partial<MonitoringData> = {
+      status_description: editStatusDescription,
+    };
+
+    // Update the appropriate actual_submit field based on status_category
+    if (currentEditItem.status_category === 'IFR') {
+      updates.actual_submit_ifr = editActualSubmit ? new Date(editActualSubmit).toISOString() : null;
+    } else if (currentEditItem.status_category === 'IFA') {
+      updates.actual_submit_ifa = editActualSubmit ? new Date(editActualSubmit).toISOString() : null;
+    } else {
+      updates.actual_submit_ifb = editActualSubmit ? new Date(editActualSubmit).toISOString() : null;
+    }
 
     const { error } = await supabase
       .from('monitoring_data')
       .update(updates)
-      .eq('id', id);
+      .eq('id', currentEditItem.id);
 
     if (error) {
       toast.error('Failed to save changes');
     } else {
       toast.success('Changes saved successfully');
-      setEditedRows(prev => {
-        const newState = { ...prev };
-        delete newState[id];
-        return newState;
-      });
+      setEditDialogOpen(false);
+      setCurrentEditItem(null);
       fetchMonitoringData();
     }
   };
@@ -198,19 +229,16 @@ export default function Monitoring() {
                   No data available
                 </TableCell>
               </TableRow> : monitoringData.map((item, index) => {
-                const hasChanges = editedRows[item.id];
-                const currentData = hasChanges ? { ...item, ...editedRows[item.id] } : item;
-                
                 // Determine which dates to show based on status_category
-                const targetDate = currentData.status_category === 'IFR' 
+                const targetDate = item.status_category === 'IFR' 
                   ? item.target_submit_ifr 
-                  : currentData.status_category === 'IFA' 
+                  : item.status_category === 'IFA' 
                   ? item.target_submit_ifa 
                   : item.target_submit_ifb;
                 
-                const actualDate = currentData.status_category === 'IFR' 
+                const actualDate = item.status_category === 'IFR' 
                   ? item.actual_submit_ifr 
-                  : currentData.status_category === 'IFA' 
+                  : item.status_category === 'IFA' 
                   ? item.actual_submit_ifa 
                   : item.actual_submit_ifb;
                 
@@ -218,7 +246,7 @@ export default function Monitoring() {
                   <TableCell>{index + 1}</TableCell>
                   <TableCell>{item.file_name}</TableCell>
                   <TableCell>
-                    <Select value={currentData.status_category} onValueChange={value => handleStatusCategoryChange(item.id, value)} disabled={!canEdit}>
+                    <Select value={item.status_category} onValueChange={value => handleStatusCategoryChange(item.id, value as 'IFR' | 'IFA' | 'IFB')} disabled={!canEdit}>
                       <SelectTrigger className="w-28">
                         <SelectValue />
                       </SelectTrigger>
@@ -240,18 +268,51 @@ export default function Monitoring() {
                   </TableCell>
                   {canEdit && (
                     <TableCell>
-                      {hasChanges && (
-                        <Button size="sm" onClick={() => handleSaveRow(item.id)}>
-                          <Save className="h-4 w-4 mr-1" />
-                          Save
-                        </Button>
-                      )}
+                      <Button size="sm" onClick={() => handleOpenEditDialog(item)}>
+                        <Pencil className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
                     </TableCell>
                   )}
                 </TableRow>
               })}
           </TableBody>
-        </Table>
+          </Table>
       </div>
+
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Monitoring Data ({currentEditItem?.status_category})</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="statusDescription">Status Description</Label>
+              <Select value={editStatusDescription} onValueChange={(value) => setEditStatusDescription(value as 'Not Yet' | 'In-Progress' | 'Complete')}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Not Yet">Not Yet</SelectItem>
+                  <SelectItem value="In-Progress">In-Progress</SelectItem>
+                  <SelectItem value="Complete">Complete</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="actualSubmit">Actual Submit ({currentEditItem?.status_category})</Label>
+              <Input
+                id="actualSubmit"
+                type="date"
+                value={editActualSubmit}
+                onChange={(e) => setEditActualSubmit(e.target.value)}
+              />
+            </div>
+            <Button onClick={handleSaveEdit} className="w-full">
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>;
 }

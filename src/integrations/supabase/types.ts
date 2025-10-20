@@ -102,7 +102,15 @@ export type Database = {
           id: string
           pic: string | null
           status_category: Database["public"]["Enums"]["status_category"]
-          status_description: Database["public"]["Enums"]["status_description"]
+          status_description_ifa:
+            | Database["public"]["Enums"]["status_description"]
+            | null
+          status_description_ifb:
+            | Database["public"]["Enums"]["status_description"]
+            | null
+          status_description_ifr:
+            | Database["public"]["Enums"]["status_description"]
+            | null
           target_submit_ifa: string | null
           target_submit_ifb: string | null
           target_submit_ifr: string | null
@@ -118,7 +126,15 @@ export type Database = {
           id?: string
           pic?: string | null
           status_category?: Database["public"]["Enums"]["status_category"]
-          status_description?: Database["public"]["Enums"]["status_description"]
+          status_description_ifa?:
+            | Database["public"]["Enums"]["status_description"]
+            | null
+          status_description_ifb?:
+            | Database["public"]["Enums"]["status_description"]
+            | null
+          status_description_ifr?:
+            | Database["public"]["Enums"]["status_description"]
+            | null
           target_submit_ifa?: string | null
           target_submit_ifb?: string | null
           target_submit_ifr?: string | null
@@ -134,7 +150,15 @@ export type Database = {
           id?: string
           pic?: string | null
           status_category?: Database["public"]["Enums"]["status_category"]
-          status_description?: Database["public"]["Enums"]["status_description"]
+          status_description_ifa?:
+            | Database["public"]["Enums"]["status_description"]
+            | null
+          status_description_ifb?:
+            | Database["public"]["Enums"]["status_description"]
+            | null
+          status_description_ifr?:
+            | Database["public"]["Enums"]["status_description"]
+            | null
           target_submit_ifa?: string | null
           target_submit_ifb?: string | null
           target_submit_ifr?: string | null

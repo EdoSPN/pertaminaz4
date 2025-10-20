@@ -14,7 +14,9 @@ interface MonitoringData {
   id: string;
   file_name: string;
   status_category: 'IFR' | 'IFA' | 'IFB';
-  status_description: 'Not Yet' | 'In-Progress' | 'Complete';
+  status_description_ifr: 'Not Yet' | 'In-Progress' | 'Complete';
+  status_description_ifa: 'Not Yet' | 'In-Progress' | 'Complete';
+  status_description_ifb: 'Not Yet' | 'In-Progress' | 'Complete';
   pic: string | null;
   target_submit_ifr: string | null;
   target_submit_ifa: string | null;
@@ -86,7 +88,15 @@ export default function Monitoring() {
 
   const handleOpenEditDialog = (item: MonitoringData) => {
     setCurrentEditItem(item);
-    setEditStatusDescription(item.status_description);
+    
+    // Get the status description based on current status category
+    const statusDesc = item.status_category === 'IFR' 
+      ? item.status_description_ifr 
+      : item.status_category === 'IFA' 
+      ? item.status_description_ifa 
+      : item.status_description_ifb;
+    
+    setEditStatusDescription(statusDesc);
     
     // Get the actual submit date based on current status category
     const actualDate = item.status_category === 'IFR' 
@@ -102,16 +112,17 @@ export default function Monitoring() {
   const handleSaveEdit = async () => {
     if (!currentEditItem) return;
 
-    const updates: Partial<MonitoringData> = {
-      status_description: editStatusDescription,
-    };
+    const updates: Partial<MonitoringData> = {};
 
-    // Update the appropriate actual_submit field based on status_category
+    // Update the appropriate status_description and actual_submit fields based on status_category
     if (currentEditItem.status_category === 'IFR') {
+      updates.status_description_ifr = editStatusDescription;
       updates.actual_submit_ifr = editActualSubmit ? new Date(editActualSubmit).toISOString() : null;
     } else if (currentEditItem.status_category === 'IFA') {
+      updates.status_description_ifa = editStatusDescription;
       updates.actual_submit_ifa = editActualSubmit ? new Date(editActualSubmit).toISOString() : null;
     } else {
+      updates.status_description_ifb = editStatusDescription;
       updates.actual_submit_ifb = editActualSubmit ? new Date(editActualSubmit).toISOString() : null;
     }
 
@@ -242,6 +253,12 @@ export default function Monitoring() {
                   ? item.actual_submit_ifa 
                   : item.actual_submit_ifb;
                 
+                const statusDescription = item.status_category === 'IFR' 
+                  ? item.status_description_ifr 
+                  : item.status_category === 'IFA' 
+                  ? item.status_description_ifa 
+                  : item.status_description_ifb;
+                
                 return <TableRow key={item.id}>
                   <TableCell>{index + 1}</TableCell>
                   <TableCell>{item.file_name}</TableCell>
@@ -257,7 +274,7 @@ export default function Monitoring() {
                       </SelectContent>
                     </Select>
                   </TableCell>
-                  <TableCell>{item.status_description}</TableCell>
+                  <TableCell>{statusDescription}</TableCell>
                   <TableCell>{item.pic || '-'}</TableCell>
                   <TableCell>{formatDate(targetDate)}</TableCell>
                   <TableCell>{formatDate(actualDate)}</TableCell>

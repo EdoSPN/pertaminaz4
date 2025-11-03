@@ -40,6 +40,7 @@ export default function Monitoring() {
   const [currentEditItem, setCurrentEditItem] = useState<MonitoringData | null>(null);
   const [editStatusDescription, setEditStatusDescription] = useState<'Not Yet' | 'In-Progress' | 'Complete'>('Not Yet');
   const [editActualSubmit, setEditActualSubmit] = useState('');
+  const [picFilter, setPicFilter] = useState<string>('all');
   useEffect(() => {
     fetchUserRole();
     fetchMonitoringData();
@@ -168,8 +169,12 @@ export default function Monitoring() {
     if (!date) return '-';
     return format(new Date(date), 'dd/MM/yyyy');
   };
+  const filteredData = picFilter === 'all' 
+    ? monitoringData 
+    : monitoringData.filter(item => item.pic === picFilter);
+
   return <div className="container mx-auto py-8 px-4">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-4">
         <h1 className="text-3xl font-bold">Data Monitoring</h1>
         {canEdit && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -215,6 +220,23 @@ export default function Monitoring() {
         )}
       </div>
 
+      <div className="mb-4">
+        <div className="flex items-center gap-2">
+          <Label htmlFor="picFilter">Filter by PIC:</Label>
+          <Select value={picFilter} onValueChange={setPicFilter}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="All PICs" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All PICs</SelectItem>
+              <SelectItem value="Slamet">Slamet</SelectItem>
+              <SelectItem value="Eka">Eka</SelectItem>
+              <SelectItem value="Edo">Edo</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -235,11 +257,11 @@ export default function Monitoring() {
                 <TableCell colSpan={9} className="text-center py-8">
                   Loading...
                 </TableCell>
-              </TableRow> : monitoringData.length === 0 ? <TableRow>
+              </TableRow> : filteredData.length === 0 ? <TableRow>
                 <TableCell colSpan={9} className="text-center py-8">
                   No data available
                 </TableCell>
-              </TableRow> : monitoringData.map((item, index) => {
+              </TableRow> : filteredData.map((item, index) => {
                 // Determine which dates to show based on status_category
                 const targetDate = item.status_category === 'IFR' 
                   ? item.target_submit_ifr 

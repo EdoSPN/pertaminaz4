@@ -96,6 +96,7 @@ export type Database = {
           actual_submit_ifa: string | null
           actual_submit_ifb: string | null
           actual_submit_ifr: string | null
+          approval_comment: string | null
           approval_status: Database["public"]["Enums"]["approval_status"]
           created_at: string | null
           file_name: string
@@ -120,6 +121,7 @@ export type Database = {
           actual_submit_ifa?: string | null
           actual_submit_ifb?: string | null
           actual_submit_ifr?: string | null
+          approval_comment?: string | null
           approval_status?: Database["public"]["Enums"]["approval_status"]
           created_at?: string | null
           file_name: string
@@ -144,6 +146,7 @@ export type Database = {
           actual_submit_ifa?: string | null
           actual_submit_ifb?: string | null
           actual_submit_ifr?: string | null
+          approval_comment?: string | null
           approval_status?: Database["public"]["Enums"]["approval_status"]
           created_at?: string | null
           file_name?: string

@@ -59,7 +59,7 @@ export default function Monitoring() {
       data,
       error
     } = await supabase.from('monitoring_data').select('*').order('created_at', {
-      ascending: false
+      ascending: true
     });
     if (error) {
       toast.error('Failed to fetch monitoring data');

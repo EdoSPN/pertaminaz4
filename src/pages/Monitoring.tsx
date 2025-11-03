@@ -7,9 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Pencil } from 'lucide-react';
+import { Plus, Pencil, CalendarIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 interface MonitoringData {
   id: string;
   file_name: string;
@@ -41,6 +44,7 @@ export default function Monitoring() {
   const [editStatusDescription, setEditStatusDescription] = useState<'Not Yet' | 'In-Progress' | 'Complete'>('Not Yet');
   const [editActualSubmit, setEditActualSubmit] = useState('');
   const [picFilter, setPicFilter] = useState<string>('all');
+  const [targetSubmitDate, setTargetSubmitDate] = useState<Date>();
   useEffect(() => {
     fetchUserRole();
     fetchMonitoringData();
@@ -152,6 +156,7 @@ export default function Monitoring() {
       .insert({
         file_name: fileName,
         pic: pic.trim() || null,
+        target_submit_ifr: targetSubmitDate ? targetSubmitDate.toISOString() : null,
       });
 
     if (error) {
@@ -161,6 +166,7 @@ export default function Monitoring() {
       setDialogOpen(false);
       setPic('');
       setFileName('');
+      setTargetSubmitDate(undefined);
       fetchMonitoringData();
     }
   };
@@ -168,6 +174,15 @@ export default function Monitoring() {
   const formatDate = (date: string | null) => {
     if (!date) return '-';
     return format(new Date(date), 'dd/MM/yyyy');
+  };
+
+  const getSubmitExplanation = (targetDate: string | null, actualDate: string | null) => {
+    if (!targetDate || !actualDate) return '-';
+    
+    const target = new Date(targetDate);
+    const actual = new Date(actualDate);
+    
+    return actual > target ? 'Over Due' : 'On Time';
   };
   const filteredData = picFilter === 'all' 
     ? monitoringData 
@@ -211,6 +226,32 @@ export default function Monitoring() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div>
+                  <Label>Target Submit (IFR)</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !targetSubmitDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {targetSubmitDate ? format(targetSubmitDate, "PPP") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={targetSubmitDate}
+                        onSelect={setTargetSubmitDate}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
                 <Button onClick={handleAddNew} className="w-full">
                   Add
                 </Button>
@@ -248,6 +289,7 @@ export default function Monitoring() {
               <TableHead>PIC</TableHead>
               <TableHead>Target Submit</TableHead>
               <TableHead>Actual Submit</TableHead>
+              <TableHead>Submit Explain</TableHead>
               <TableHead>Approval</TableHead>
               {canEdit && <TableHead>Actions</TableHead>}
             </TableRow>
@@ -300,6 +342,15 @@ export default function Monitoring() {
                   <TableCell>{item.pic || '-'}</TableCell>
                   <TableCell>{formatDate(targetDate)}</TableCell>
                   <TableCell>{formatDate(actualDate)}</TableCell>
+                  <TableCell>
+                    {getSubmitExplanation(targetDate, actualDate) === 'Over Due' ? (
+                      <span className="text-destructive font-medium">Over Due</span>
+                    ) : getSubmitExplanation(targetDate, actualDate) === 'On Time' ? (
+                      <span className="text-green-600 font-medium">On Time</span>
+                    ) : (
+                      <span>-</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <span className={`px-2 py-1 rounded text-xs ${item.approval_status === 'Approved' ? 'bg-green-100 text-green-800' : item.approval_status === 'Denied' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
                       {item.approval_status}

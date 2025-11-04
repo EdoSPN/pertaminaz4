@@ -7,12 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Pencil, CalendarIcon } from 'lucide-react';
+import { Plus, Pencil, CalendarIcon, Check, ChevronsUpDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 interface MonitoringData {
   id: string;
   file_name: string;
@@ -54,6 +55,8 @@ export default function Monitoring() {
   const [picFilter, setPicFilter] = useState<string>('all');
   const [targetSubmitDate, setTargetSubmitDate] = useState<Date>();
   const [existingPics, setExistingPics] = useState<string[]>([]);
+  const [picComboOpen, setPicComboOpen] = useState(false);
+  const [editPicComboOpen, setEditPicComboOpen] = useState(false);
   useEffect(() => {
     fetchUserRole();
     fetchMonitoringData();
@@ -334,18 +337,64 @@ export default function Monitoring() {
                 </div>
                 <div>
                   <Label htmlFor="pic">PIC</Label>
-                  <Input
-                    id="pic"
-                    value={pic}
-                    onChange={(e) => setPic(e.target.value)}
-                    placeholder="Enter or select PIC name"
-                    list="pic-options"
-                  />
-                  <datalist id="pic-options">
-                    {existingPics.map((picName) => (
-                      <option key={picName} value={picName} />
-                    ))}
-                  </datalist>
+                  <Popover open={picComboOpen} onOpenChange={setPicComboOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={picComboOpen}
+                        className="w-full justify-between"
+                      >
+                        {pic || "Select or type PIC name..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput 
+                          placeholder="Search or type new PIC..." 
+                          value={pic}
+                          onValueChange={setPic}
+                        />
+                        <CommandList>
+                          <CommandEmpty>
+                            {pic.trim() && !existingPics.includes(pic.trim()) ? (
+                              <div className="p-2 text-sm">
+                                <div className="font-medium">Add new: "{pic}"</div>
+                                {userRole !== 'admin' && userRole !== 'reviewer' && (
+                                  <div className="text-xs text-destructive mt-1">
+                                    Only Admin and Reviewer can add new PICs
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              "No PIC found."
+                            )}
+                          </CommandEmpty>
+                          <CommandGroup>
+                            {existingPics.map((picName) => (
+                              <CommandItem
+                                key={picName}
+                                value={picName}
+                                onSelect={(currentValue) => {
+                                  setPic(currentValue);
+                                  setPicComboOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    pic === picName ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {picName}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   {pic.trim() && !existingPics.includes(pic.trim()) && userRole !== 'admin' && userRole !== 'reviewer' && (
                     <p className="text-xs text-destructive mt-1">Only Admin and Reviewer can add new PIC names</p>
                   )}
@@ -571,18 +620,64 @@ export default function Monitoring() {
             </div>
             <div>
               <Label htmlFor="editPic">PIC</Label>
-              <Input
-                id="editPic"
-                value={editPic}
-                onChange={(e) => setEditPic(e.target.value)}
-                placeholder="Enter or select PIC name"
-                list="edit-pic-options"
-              />
-              <datalist id="edit-pic-options">
-                {existingPics.map((picName) => (
-                  <option key={picName} value={picName} />
-                ))}
-              </datalist>
+              <Popover open={editPicComboOpen} onOpenChange={setEditPicComboOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={editPicComboOpen}
+                    className="w-full justify-between"
+                  >
+                    {editPic || "Select or type PIC name..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" align="start">
+                  <Command>
+                    <CommandInput 
+                      placeholder="Search or type new PIC..." 
+                      value={editPic}
+                      onValueChange={setEditPic}
+                    />
+                    <CommandList>
+                      <CommandEmpty>
+                        {editPic.trim() && !existingPics.includes(editPic.trim()) ? (
+                          <div className="p-2 text-sm">
+                            <div className="font-medium">Add new: "{editPic}"</div>
+                            {userRole !== 'admin' && userRole !== 'reviewer' && (
+                              <div className="text-xs text-destructive mt-1">
+                                Only Admin and Reviewer can add new PICs
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          "No PIC found."
+                        )}
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {existingPics.map((picName) => (
+                          <CommandItem
+                            key={picName}
+                            value={picName}
+                            onSelect={(currentValue) => {
+                              setEditPic(currentValue);
+                              setEditPicComboOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                editPic === picName ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {picName}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
               {editPic.trim() && !existingPics.includes(editPic.trim()) && userRole !== 'admin' && userRole !== 'reviewer' && (
                 <p className="text-xs text-destructive mt-1">Only Admin and Reviewer can add new PIC names</p>
               )}

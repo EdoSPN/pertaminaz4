@@ -53,6 +53,7 @@ export default function Monitoring() {
   const [approvalComment, setApprovalComment] = useState('');
   const [picFilter, setPicFilter] = useState<string>('all');
   const [targetSubmitDate, setTargetSubmitDate] = useState<Date>();
+  const existingPics = ['Slamet', 'Eka', 'Edo'];
   useEffect(() => {
     fetchUserRole();
     fetchMonitoringData();
@@ -183,6 +184,14 @@ export default function Monitoring() {
   const handleSaveReviewerEdit = async () => {
     if (!currentEditItem) return;
 
+    // Check if PIC is new and user has permission
+    if (editPic.trim() && !existingPics.includes(editPic.trim())) {
+      if (userRole !== 'admin' && userRole !== 'reviewer') {
+        toast.error('Only Admin and Reviewer can add new PIC names');
+        return;
+      }
+    }
+
     const updates: Partial<MonitoringData> = {
       file_name: editFileName,
       pic: editPic.trim() || null,
@@ -236,6 +245,14 @@ export default function Monitoring() {
     if (!fileName.trim()) {
       toast.error('File name is required');
       return;
+    }
+
+    // Check if PIC is new and user has permission
+    if (pic.trim() && !existingPics.includes(pic.trim())) {
+      if (userRole !== 'admin' && userRole !== 'reviewer') {
+        toast.error('Only Admin and Reviewer can add new PIC names');
+        return;
+      }
     }
 
     const { error } = await supabase
@@ -302,16 +319,21 @@ export default function Monitoring() {
                 </div>
                 <div>
                   <Label htmlFor="pic">PIC</Label>
-                  <Select value={pic} onValueChange={setPic}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select PIC" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Slamet">Slamet</SelectItem>
-                      <SelectItem value="Eka">Eka</SelectItem>
-                      <SelectItem value="Edo">Edo</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    id="pic"
+                    value={pic}
+                    onChange={(e) => setPic(e.target.value)}
+                    placeholder="Enter or select PIC name"
+                    list="pic-options"
+                  />
+                  <datalist id="pic-options">
+                    {existingPics.map((picName) => (
+                      <option key={picName} value={picName} />
+                    ))}
+                  </datalist>
+                  {pic.trim() && !existingPics.includes(pic.trim()) && userRole !== 'admin' && userRole !== 'reviewer' && (
+                    <p className="text-xs text-destructive mt-1">Only Admin and Reviewer can add new PIC names</p>
+                  )}
                 </div>
                 <div>
                   <Label>Target Submit (IFR)</Label>
@@ -532,16 +554,21 @@ export default function Monitoring() {
             </div>
             <div>
               <Label htmlFor="editPic">PIC</Label>
-              <Select value={editPic} onValueChange={setEditPic}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select PIC" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Slamet">Slamet</SelectItem>
-                  <SelectItem value="Eka">Eka</SelectItem>
-                  <SelectItem value="Edo">Edo</SelectItem>
-                </SelectContent>
-              </Select>
+              <Input
+                id="editPic"
+                value={editPic}
+                onChange={(e) => setEditPic(e.target.value)}
+                placeholder="Enter or select PIC name"
+                list="edit-pic-options"
+              />
+              <datalist id="edit-pic-options">
+                {existingPics.map((picName) => (
+                  <option key={picName} value={picName} />
+                ))}
+              </datalist>
+              {editPic.trim() && !existingPics.includes(editPic.trim()) && userRole !== 'admin' && userRole !== 'reviewer' && (
+                <p className="text-xs text-destructive mt-1">Only Admin and Reviewer can add new PIC names</p>
+              )}
             </div>
             <div>
               <Label>Target Submit ({currentEditItem?.status_category})</Label>

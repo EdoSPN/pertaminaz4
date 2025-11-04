@@ -53,11 +53,24 @@ export default function Monitoring() {
   const [approvalComment, setApprovalComment] = useState('');
   const [picFilter, setPicFilter] = useState<string>('all');
   const [targetSubmitDate, setTargetSubmitDate] = useState<Date>();
-  const existingPics = ['Slamet', 'Eka', 'Edo'];
+  const [existingPics, setExistingPics] = useState<string[]>([]);
   useEffect(() => {
     fetchUserRole();
     fetchMonitoringData();
+    fetchExistingPics();
   }, [user]);
+
+  const fetchExistingPics = async () => {
+    const { data, error } = await supabase
+      .from('monitoring_data')
+      .select('pic')
+      .not('pic', 'is', null);
+
+    if (!error && data) {
+      const uniquePics = Array.from(new Set(data.map(item => item.pic).filter(Boolean))) as string[];
+      setExistingPics(uniquePics.sort());
+    }
+  };
   const fetchUserRole = async () => {
     if (!user) return;
     const {
@@ -218,6 +231,7 @@ export default function Monitoring() {
       setReviewerEditDialogOpen(false);
       setCurrentEditItem(null);
       fetchMonitoringData();
+      fetchExistingPics(); // Refresh PIC list
     }
   };
 
@@ -272,6 +286,7 @@ export default function Monitoring() {
       setFileName('');
       setTargetSubmitDate(undefined);
       fetchMonitoringData();
+      fetchExistingPics(); // Refresh PIC list
     }
   };
 
@@ -379,9 +394,11 @@ export default function Monitoring() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All PICs</SelectItem>
-              <SelectItem value="Slamet">Slamet</SelectItem>
-              <SelectItem value="Eka">Eka</SelectItem>
-              <SelectItem value="Edo">Edo</SelectItem>
+              {existingPics.map((picName) => (
+                <SelectItem key={picName} value={picName}>
+                  {picName}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

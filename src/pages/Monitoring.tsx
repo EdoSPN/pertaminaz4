@@ -7,13 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Pencil, CalendarIcon, Check, ChevronsUpDown } from 'lucide-react';
+import { Plus, Pencil, CalendarIcon, Check, ChevronsUpDown, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 interface MonitoringData {
   id: string;
   file_name: string;
@@ -103,6 +104,7 @@ export default function Monitoring() {
   const canEditStatus = userRole === 'admin' || userRole === 'user';
   const canEditFileInfo = userRole === 'admin' || userRole === 'reviewer';
   const canApprove = userRole === 'admin' || userRole === 'approver';
+  const isAdmin = userRole === 'admin';
   
   const handleStatusCategoryChange = async (id: string, value: 'IFR' | 'IFA' | 'IFB') => {
     if (!canEditFileInfo) return;
@@ -256,6 +258,20 @@ export default function Monitoring() {
       toast.success('Approval status updated successfully');
       setApprovalDialogOpen(false);
       setCurrentEditItem(null);
+      fetchMonitoringData();
+    }
+  };
+
+  const handleDeleteData = async (id: string) => {
+    const { error } = await supabase
+      .from('monitoring_data')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      toast.error('Failed to delete data');
+    } else {
+      toast.success('Data deleted successfully');
       fetchMonitoringData();
     }
   };
@@ -503,7 +519,7 @@ export default function Monitoring() {
               <TableHead>Actual Submit</TableHead>
               <TableHead>Submit Explain</TableHead>
               <TableHead>Approval</TableHead>
-              {(canEditStatus || canEditFileInfo || canApprove) && <TableHead>Actions</TableHead>}
+              {(canEditStatus || canEditFileInfo || canApprove || isAdmin) && <TableHead>Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -562,7 +578,7 @@ export default function Monitoring() {
                       )}
                     </div>
                   </TableCell>
-                  {(canEditStatus || canEditFileInfo || canApprove) && (
+                  {(canEditStatus || canEditFileInfo || canApprove || isAdmin) && (
                     <TableCell>
                       <div className="flex gap-2">
                         {canEditStatus && (
@@ -582,6 +598,29 @@ export default function Monitoring() {
                             <Pencil className="h-4 w-4 mr-1" />
                             Approval
                           </Button>
+                        )}
+                        {isAdmin && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="outline">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Data</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete "{item.file_name}"? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteData(item.id)}>
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         )}
                       </div>
                     </TableCell>

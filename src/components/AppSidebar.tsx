@@ -30,7 +30,7 @@ const menuItems = [
   { title: 'Power BI Analysis', url: '/powerbi', icon: BarChart3 },
   { title: 'Unit Estimator', url: '/calculator', icon: Calculator },
   { title: 'Data Repository', url: '/repository', icon: Database },
-  { title: 'Data Monitoring', url: '/monitoring', icon: Monitor },
+  { title: 'Data Tracking', url: '/monitoring', icon: Monitor },
   { title: 'User Management', url: '/users', icon: Shield, adminOnly: true },
 ];
 

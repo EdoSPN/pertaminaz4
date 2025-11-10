@@ -53,6 +53,7 @@ export default function Monitoring() {
   const [approvalStatus, setApprovalStatus] = useState<'Approved' | 'Denied' | 'Pending'>('Pending');
   const [approvalComment, setApprovalComment] = useState('');
   const [picFilter, setPicFilter] = useState<string>('all');
+  const [statusCategoryFilter, setStatusCategoryFilter] = useState<'ALL' | 'IFR' | 'IFA' | 'IFB'>('ALL');
   const [targetSubmitDate, setTargetSubmitDate] = useState<Date>();
   const [existingPics, setExistingPics] = useState<string[]>([]);
   const [picComboOpen, setPicComboOpen] = useState(false);
@@ -306,9 +307,11 @@ export default function Monitoring() {
     
     return actual > target ? 'Over Due' : 'On Time';
   };
-  const filteredData = picFilter === 'all' 
-    ? monitoringData 
-    : monitoringData.filter(item => item.pic === picFilter);
+  const filteredData = monitoringData.filter(item => {
+    const picMatch = picFilter === 'all' || item.pic === picFilter;
+    const categoryMatch = statusCategoryFilter === 'ALL' || item.status_category === statusCategoryFilter;
+    return picMatch && categoryMatch;
+  });
 
   return <div className="container mx-auto py-8 px-4">
       <div className="flex justify-between items-center mb-4">
@@ -434,9 +437,43 @@ export default function Monitoring() {
         )}
       </div>
 
-      <div className="mb-4">
+      <div className="mb-4 space-y-4">
+        <div>
+          <Label className="mb-2 block">Filter by:</Label>
+          <div className="flex gap-2">
+            <Button
+              variant={statusCategoryFilter === 'ALL' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatusCategoryFilter('ALL')}
+            >
+              ALL
+            </Button>
+            <Button
+              variant={statusCategoryFilter === 'IFR' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatusCategoryFilter('IFR')}
+            >
+              IFR
+            </Button>
+            <Button
+              variant={statusCategoryFilter === 'IFA' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatusCategoryFilter('IFA')}
+            >
+              IFA
+            </Button>
+            <Button
+              variant={statusCategoryFilter === 'IFB' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatusCategoryFilter('IFB')}
+            >
+              IFB
+            </Button>
+          </div>
+        </div>
+        
         <div className="flex items-center gap-2">
-          <Label htmlFor="picFilter">Filter by PIC:</Label>
+          <Label htmlFor="picFilter">PIC:</Label>
           <Select value={picFilter} onValueChange={setPicFilter}>
             <SelectTrigger className="w-48">
               <SelectValue placeholder="All PICs" />
@@ -501,18 +538,7 @@ export default function Monitoring() {
                 return <TableRow key={item.id}>
                   <TableCell>{index + 1}</TableCell>
                   <TableCell>{item.file_name}</TableCell>
-                  <TableCell>
-                    <Select value={item.status_category} onValueChange={value => handleStatusCategoryChange(item.id, value as 'IFR' | 'IFA' | 'IFB')} disabled={!canEditFileInfo}>
-                      <SelectTrigger className="w-28">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="IFR">IFR</SelectItem>
-                        <SelectItem value="IFA">IFA</SelectItem>
-                        <SelectItem value="IFB">IFB</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
+                  <TableCell>{item.status_category}</TableCell>
                   <TableCell>{statusDescription}</TableCell>
                   <TableCell>{item.pic || '-'}</TableCell>
                   <TableCell>{formatDate(targetDate)}</TableCell>

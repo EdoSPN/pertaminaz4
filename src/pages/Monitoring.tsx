@@ -323,11 +323,30 @@ export default function Monitoring() {
     
     return actual > target ? 'Over Due' : 'On Time';
   };
-  const filteredData = monitoringData.filter(item => {
+  // Group data by file_name and filter by PIC
+  const groupedData = monitoringData.reduce((acc, item) => {
     const picMatch = picFilter === 'all' || item.pic === picFilter;
-    const categoryMatch = statusCategoryFilter === 'ALL' || item.status_category === statusCategoryFilter;
-    return picMatch && categoryMatch;
-  });
+    if (!picMatch) return acc;
+    
+    if (!acc[item.file_name]) {
+      acc[item.file_name] = {
+        file_name: item.file_name,
+        pic: item.pic,
+        id: item.id,
+        ifr: null as MonitoringData | null,
+        ifa: null as MonitoringData | null,
+        ifb: null as MonitoringData | null,
+      };
+    }
+    
+    if (item.status_category === 'IFR') acc[item.file_name].ifr = item;
+    if (item.status_category === 'IFA') acc[item.file_name].ifa = item;
+    if (item.status_category === 'IFB') acc[item.file_name].ifb = item;
+    
+    return acc;
+  }, {} as Record<string, { file_name: string; pic: string | null; id: string; ifr: MonitoringData | null; ifa: MonitoringData | null; ifb: MonitoringData | null }>);
+
+  const groupedDataArray = Object.values(groupedData);
 
   return <div className="container mx-auto py-8 px-4">
       <div className="flex justify-between items-center mb-4">
@@ -523,110 +542,143 @@ export default function Monitoring() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {loading ? <TableRow>
-                <TableCell colSpan={9} className="text-center py-8">
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={10} className="text-center py-8">
                   Loading...
                 </TableCell>
-              </TableRow> : filteredData.length === 0 ? <TableRow>
-                <TableCell colSpan={9} className="text-center py-8">
+              </TableRow>
+            ) : groupedDataArray.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={10} className="text-center py-8">
                   No data available
                 </TableCell>
-              </TableRow> : filteredData.map((item, index) => {
-                // Determine which dates to show based on status_category
-                const targetDate = item.status_category === 'IFR' 
-                  ? item.target_submit_ifr 
-                  : item.status_category === 'IFA' 
-                  ? item.target_submit_ifa 
-                  : item.target_submit_ifb;
+              </TableRow>
+            ) : (
+              groupedDataArray.map((group, groupIndex) => {
+                const categories = ['IFR', 'IFA', 'IFB'] as const;
+                const visibleCategories = statusCategoryFilter === 'ALL' 
+                  ? categories 
+                  : categories.filter(cat => cat === statusCategoryFilter);
                 
-                const actualDate = item.status_category === 'IFR' 
-                  ? item.actual_submit_ifr 
-                  : item.status_category === 'IFA' 
-                  ? item.actual_submit_ifa 
-                  : item.actual_submit_ifb;
-                
-                const statusDescription = item.status_category === 'IFR' 
-                  ? item.status_description_ifr 
-                  : item.status_category === 'IFA' 
-                  ? item.status_description_ifa 
-                  : item.status_description_ifb;
-                
-                return <TableRow key={item.id}>
-                  <TableCell>{index + 1}</TableCell>
-                  <TableCell>{item.file_name}</TableCell>
-                  <TableCell>{item.status_category}</TableCell>
-                  <TableCell>{statusDescription}</TableCell>
-                  <TableCell>{item.pic || '-'}</TableCell>
-                  <TableCell>{formatDate(targetDate)}</TableCell>
-                  <TableCell>{formatDate(actualDate)}</TableCell>
-                  <TableCell>
-                    {getSubmitExplanation(targetDate, actualDate) === 'Over Due' ? (
-                      <span className="text-destructive font-medium">Over Due</span>
-                    ) : getSubmitExplanation(targetDate, actualDate) === 'On Time' ? (
-                      <span className="text-green-600 font-medium">On Time</span>
-                    ) : (
-                      <span>-</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-1">
-                      <span className={`px-2 py-1 rounded text-xs ${item.approval_status === 'Approved' ? 'bg-green-100 text-green-800' : item.approval_status === 'Denied' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                        {item.approval_status}
-                      </span>
-                      {item.approval_comment && (
-                        <span className="text-xs text-muted-foreground">{item.approval_comment}</span>
+                return visibleCategories.map((category, catIndex) => {
+                  const item = group[category.toLowerCase() as 'ifr' | 'ifa' | 'ifb'];
+                  const isFirstRow = catIndex === 0;
+                  
+                  const targetDate = item ? (
+                    category === 'IFR' ? item.target_submit_ifr :
+                    category === 'IFA' ? item.target_submit_ifa :
+                    item.target_submit_ifb
+                  ) : null;
+                  
+                  const actualDate = item ? (
+                    category === 'IFR' ? item.actual_submit_ifr :
+                    category === 'IFA' ? item.actual_submit_ifa :
+                    item.actual_submit_ifb
+                  ) : null;
+                  
+                  const statusDescription = item ? (
+                    category === 'IFR' ? item.status_description_ifr :
+                    category === 'IFA' ? item.status_description_ifa :
+                    item.status_description_ifb
+                  ) : 'Not Yet';
+                  
+                  return (
+                    <TableRow key={`${group.file_name}-${category}`}>
+                      {isFirstRow ? (
+                        <TableCell rowSpan={visibleCategories.length}>
+                          {groupIndex + 1}
+                        </TableCell>
+                      ) : null}
+                      {isFirstRow ? (
+                        <TableCell rowSpan={visibleCategories.length}>
+                          {group.file_name}
+                        </TableCell>
+                      ) : null}
+                      <TableCell>{category}</TableCell>
+                      <TableCell>{statusDescription}</TableCell>
+                      {isFirstRow ? (
+                        <TableCell rowSpan={visibleCategories.length}>
+                          {group.pic || '-'}
+                        </TableCell>
+                      ) : null}
+                      <TableCell>{formatDate(targetDate)}</TableCell>
+                      <TableCell>{formatDate(actualDate)}</TableCell>
+                      <TableCell>
+                        {getSubmitExplanation(targetDate, actualDate) === 'Over Due' ? (
+                          <span className="text-destructive font-medium">Over Due</span>
+                        ) : getSubmitExplanation(targetDate, actualDate) === 'On Time' ? (
+                          <span className="text-green-600 font-medium">On Time</span>
+                        ) : (
+                          <span>-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {item && (
+                          <div className="flex flex-col gap-1">
+                            <span className={`px-2 py-1 rounded text-xs ${item.approval_status === 'Approved' ? 'bg-green-100 text-green-800' : item.approval_status === 'Denied' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                              {item.approval_status}
+                            </span>
+                            {item.approval_comment && (
+                              <span className="text-xs text-muted-foreground">{item.approval_comment}</span>
+                            )}
+                          </div>
+                        )}
+                      </TableCell>
+                      {(canEditStatus || canEditFileInfo || canApprove || isAdmin) && (
+                        <TableCell>
+                          {item && (
+                            <div className="flex gap-2">
+                              {canEditStatus && (
+                                <Button size="sm" variant="outline" onClick={() => handleOpenEditDialog(item)}>
+                                  <Pencil className="h-4 w-4 mr-1" />
+                                  Status
+                                </Button>
+                              )}
+                              {canEditFileInfo && (
+                                <Button size="sm" variant="outline" onClick={() => handleOpenReviewerEditDialog(item)}>
+                                  <Pencil className="h-4 w-4 mr-1" />
+                                  File Info
+                                </Button>
+                              )}
+                              {canApprove && (
+                                <Button size="sm" variant="outline" onClick={() => handleOpenApprovalDialog(item)}>
+                                  <Pencil className="h-4 w-4 mr-1" />
+                                  Approval
+                                </Button>
+                              )}
+                              {isAdmin && (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button size="sm" variant="outline">
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete Data</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to delete "{item.file_name}" - {category}? This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => handleDeleteData(item.id)}>
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
+                            </div>
+                          )}
+                        </TableCell>
                       )}
-                    </div>
-                  </TableCell>
-                  {(canEditStatus || canEditFileInfo || canApprove || isAdmin) && (
-                    <TableCell>
-                      <div className="flex gap-2">
-                        {canEditStatus && (
-                          <Button size="sm" variant="outline" onClick={() => handleOpenEditDialog(item)}>
-                            <Pencil className="h-4 w-4 mr-1" />
-                            Status
-                          </Button>
-                        )}
-                        {canEditFileInfo && (
-                          <Button size="sm" variant="outline" onClick={() => handleOpenReviewerEditDialog(item)}>
-                            <Pencil className="h-4 w-4 mr-1" />
-                            File Info
-                          </Button>
-                        )}
-                        {canApprove && (
-                          <Button size="sm" variant="outline" onClick={() => handleOpenApprovalDialog(item)}>
-                            <Pencil className="h-4 w-4 mr-1" />
-                            Approval
-                          </Button>
-                        )}
-                        {isAdmin && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button size="sm" variant="outline">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Data</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete "{item.file_name}"? This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteData(item.id)}>
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
-                      </div>
-                    </TableCell>
-                  )}
-                </TableRow>
-              })}
+                    </TableRow>
+                  );
+                });
+              })
+            )}
           </TableBody>
           </Table>
       </div>

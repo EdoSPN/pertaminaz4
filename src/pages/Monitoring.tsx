@@ -56,6 +56,8 @@ export default function Monitoring() {
   const [picFilter, setPicFilter] = useState<string>('all');
   const [statusCategoryFilter, setStatusCategoryFilter] = useState<'ALL' | 'IFR' | 'IFA' | 'IFB'>('ALL');
   const [targetSubmitDate, setTargetSubmitDate] = useState<Date>();
+  const [targetSubmitDateIFA, setTargetSubmitDateIFA] = useState<Date>();
+  const [targetSubmitDateIFB, setTargetSubmitDateIFB] = useState<Date>();
   const [existingPics, setExistingPics] = useState<string[]>([]);
   const [picComboOpen, setPicComboOpen] = useState(false);
   const [editPicComboOpen, setEditPicComboOpen] = useState(false);
@@ -295,6 +297,8 @@ export default function Monitoring() {
         file_name: fileName,
         pic: pic.trim() || null,
         target_submit_ifr: targetSubmitDate ? targetSubmitDate.toISOString() : null,
+        target_submit_ifa: targetSubmitDateIFA ? targetSubmitDateIFA.toISOString() : null,
+        target_submit_ifb: targetSubmitDateIFB ? targetSubmitDateIFB.toISOString() : null,
       });
 
     if (error) {
@@ -305,6 +309,8 @@ export default function Monitoring() {
       setPic('');
       setFileName('');
       setTargetSubmitDate(undefined);
+      setTargetSubmitDateIFA(undefined);
+      setTargetSubmitDateIFB(undefined);
       fetchMonitoringData();
       fetchExistingPics(); // Refresh PIC list
     }
@@ -348,20 +354,74 @@ export default function Monitoring() {
 
   const groupedDataArray = Object.values(groupedData);
 
-  return <div className="container mx-auto py-8 px-4">
-      <div className="flex justify-between items-center mb-4">
+   return <div className="container mx-auto py-8 px-4">
+      <div className="mb-4">
         <h1 className="text-3xl font-bold">Data Tracking</h1>
+      </div>
+
+      <div className="mb-4 space-y-4">
+        <div>
+          <Label className="mb-2 block">Filter by:</Label>
+          <div className="flex gap-2">
+            <Button
+              variant={statusCategoryFilter === 'ALL' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatusCategoryFilter('ALL')}
+            >
+              ALL
+            </Button>
+            <Button
+              variant={statusCategoryFilter === 'IFR' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatusCategoryFilter('IFR')}
+            >
+              IFR
+            </Button>
+            <Button
+              variant={statusCategoryFilter === 'IFA' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatusCategoryFilter('IFA')}
+            >
+              IFA
+            </Button>
+            <Button
+              variant={statusCategoryFilter === 'IFB' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setStatusCategoryFilter('IFB')}
+            >
+              IFB
+            </Button>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Label htmlFor="picFilter">PIC:</Label>
+          <Select value={picFilter} onValueChange={setPicFilter}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="All PICs" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All PICs</SelectItem>
+              {existingPics.map((picName) => (
+                <SelectItem key={picName} value={picName}>
+                  {picName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         {canAddNew && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
-                Add New
+                Add Data
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Add New Monitoring Data</DialogTitle>
+                <DialogTitle>Add New Tracking Data</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
@@ -463,6 +523,58 @@ export default function Monitoring() {
                     </PopoverContent>
                   </Popover>
                 </div>
+                <div>
+                  <Label>Target Submit (IFA)</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !targetSubmitDateIFA && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {targetSubmitDateIFA ? format(targetSubmitDateIFA, "PPP") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={targetSubmitDateIFA}
+                        onSelect={setTargetSubmitDateIFA}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div>
+                  <Label>Target Submit (IFB)</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !targetSubmitDateIFB && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {targetSubmitDateIFB ? format(targetSubmitDateIFB, "PPP") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={targetSubmitDateIFB}
+                        onSelect={setTargetSubmitDateIFB}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
                 <Button onClick={handleAddNew} className="w-full">
                   Add
                 </Button>
@@ -470,59 +582,6 @@ export default function Monitoring() {
             </DialogContent>
           </Dialog>
         )}
-      </div>
-
-      <div className="mb-4 space-y-4">
-        <div>
-          <Label className="mb-2 block">Filter by:</Label>
-          <div className="flex gap-2">
-            <Button
-              variant={statusCategoryFilter === 'ALL' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setStatusCategoryFilter('ALL')}
-            >
-              ALL
-            </Button>
-            <Button
-              variant={statusCategoryFilter === 'IFR' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setStatusCategoryFilter('IFR')}
-            >
-              IFR
-            </Button>
-            <Button
-              variant={statusCategoryFilter === 'IFA' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setStatusCategoryFilter('IFA')}
-            >
-              IFA
-            </Button>
-            <Button
-              variant={statusCategoryFilter === 'IFB' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setStatusCategoryFilter('IFB')}
-            >
-              IFB
-            </Button>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Label htmlFor="picFilter">PIC:</Label>
-          <Select value={picFilter} onValueChange={setPicFilter}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="All PICs" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All PICs</SelectItem>
-              {existingPics.map((picName) => (
-                <SelectItem key={picName} value={picName}>
-                  {picName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
       </div>
 
       <div className="rounded-md border">

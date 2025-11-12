@@ -264,11 +264,11 @@ export default function Monitoring() {
     }
   };
 
-  const handleDeleteData = async (id: string) => {
+  const handleDeleteData = async (fileName: string) => {
     const { error } = await supabase
       .from('monitoring_data')
       .delete()
-      .eq('id', id);
+      .eq('file_name', fileName);
 
     if (error) {
       toast.error('Failed to delete data');
@@ -722,35 +722,35 @@ export default function Monitoring() {
                                   File Info
                                 </Button>
                               )}
-                              {canApprove && (
-                                <Button size="sm" variant="outline" onClick={() => handleOpenApprovalDialog(item)}>
-                                  <Pencil className="h-4 w-4 mr-1" />
-                                  Approval
-                                </Button>
-                              )}
-                              {isAdmin && (
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button size="sm" variant="outline">
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Delete Data</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        Are you sure you want to delete "{item.file_name}" - {category}? This action cannot be undone.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                      <AlertDialogAction onClick={() => handleDeleteData(item.id)}>
-                                        Delete
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              )}
+                      {canApprove && (
+                        <Button size="sm" variant="outline" onClick={() => handleOpenApprovalDialog(item)}>
+                          <Pencil className="h-4 w-4 mr-1" />
+                          Approval
+                        </Button>
+                      )}
+                      {isAdmin && isFirstRow && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="sm" variant="outline">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Data</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete all data for "{group.file_name}"? This will remove all IFR, IFA, and IFB records. This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteData(group.file_name)}>
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
                             </div>
                           ) : (
                             <span>-</span>

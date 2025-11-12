@@ -291,15 +291,35 @@ export default function Monitoring() {
       }
     }
 
+    // Create three rows: one for IFR, one for IFA, and one for IFB
     const { error } = await supabase
       .from('monitoring_data')
-      .insert({
-        file_name: fileName,
-        pic: pic.trim() || null,
-        target_submit_ifr: targetSubmitDate ? targetSubmitDate.toISOString() : null,
-        target_submit_ifa: targetSubmitDateIFA ? targetSubmitDateIFA.toISOString() : null,
-        target_submit_ifb: targetSubmitDateIFB ? targetSubmitDateIFB.toISOString() : null,
-      });
+      .insert([
+        {
+          file_name: fileName,
+          pic: pic.trim() || null,
+          status_category: 'IFR',
+          target_submit_ifr: targetSubmitDate ? targetSubmitDate.toISOString() : null,
+          target_submit_ifa: targetSubmitDateIFA ? targetSubmitDateIFA.toISOString() : null,
+          target_submit_ifb: targetSubmitDateIFB ? targetSubmitDateIFB.toISOString() : null,
+        },
+        {
+          file_name: fileName,
+          pic: pic.trim() || null,
+          status_category: 'IFA',
+          target_submit_ifr: targetSubmitDate ? targetSubmitDate.toISOString() : null,
+          target_submit_ifa: targetSubmitDateIFA ? targetSubmitDateIFA.toISOString() : null,
+          target_submit_ifb: targetSubmitDateIFB ? targetSubmitDateIFB.toISOString() : null,
+        },
+        {
+          file_name: fileName,
+          pic: pic.trim() || null,
+          status_category: 'IFB',
+          target_submit_ifr: targetSubmitDate ? targetSubmitDate.toISOString() : null,
+          target_submit_ifa: targetSubmitDateIFA ? targetSubmitDateIFA.toISOString() : null,
+          target_submit_ifb: targetSubmitDateIFB ? targetSubmitDateIFB.toISOString() : null,
+        },
+      ]);
 
     if (error) {
       toast.error('Failed to add monitoring data');

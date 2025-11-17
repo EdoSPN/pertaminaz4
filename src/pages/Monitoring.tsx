@@ -213,24 +213,43 @@ export default function Monitoring() {
       }
     }
 
-    const updates: Partial<MonitoringData> = {
+    // Store the original file_name to update all related rows
+    const originalFileName = currentEditItem.file_name;
+
+    // Update all rows with the same file_name to keep them grouped
+    const commonUpdates = {
       file_name: editFileName,
       pic: editPic.trim() || null,
     };
 
-    // Update the appropriate target_submit field based on status_category
-    if (currentEditItem.status_category === 'IFR') {
-      updates.target_submit_ifr = editTargetSubmitDate ? editTargetSubmitDate.toISOString() : null;
-    } else if (currentEditItem.status_category === 'IFA') {
-      updates.target_submit_ifa = editTargetSubmitDate ? editTargetSubmitDate.toISOString() : null;
-    } else {
-      updates.target_submit_ifb = editTargetSubmitDate ? editTargetSubmitDate.toISOString() : null;
-    }
-
     const { error } = await supabase
       .from('monitoring_data')
-      .update(updates)
-      .eq('id', currentEditItem.id);
+      .update(commonUpdates)
+      .eq('file_name', originalFileName);
+
+    // Then update the specific target_submit field for the current category row
+    if (!error) {
+      const categoryUpdate: Partial<MonitoringData> = {};
+      
+      if (currentEditItem.status_category === 'IFR') {
+        categoryUpdate.target_submit_ifr = editTargetSubmitDate ? editTargetSubmitDate.toISOString() : null;
+      } else if (currentEditItem.status_category === 'IFA') {
+        categoryUpdate.target_submit_ifa = editTargetSubmitDate ? editTargetSubmitDate.toISOString() : null;
+      } else {
+        categoryUpdate.target_submit_ifb = editTargetSubmitDate ? editTargetSubmitDate.toISOString() : null;
+      }
+
+      const { error: categoryError } = await supabase
+        .from('monitoring_data')
+        .update(categoryUpdate)
+        .eq('file_name', editFileName)
+        .eq('status_category', currentEditItem.status_category);
+
+      if (categoryError) {
+        toast.error('Failed to save target date');
+        return;
+      }
+    }
 
     if (error) {
       toast.error('Failed to save changes');

@@ -395,7 +395,7 @@ export default function Monitoring() {
 
    return <div className="container mx-auto py-8 px-4">
       <div className="mb-4">
-        <h1 className="text-3xl font-bold">Data Tracking</h1>
+        <h1 className="text-3xl font-bold">Document Tracking</h1>
       </div>
 
       <div className="mb-4 space-y-4">
@@ -460,7 +460,7 @@ export default function Monitoring() {
             </DialogTrigger>
             <DialogContent className="max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Add New Tracking Data</DialogTitle>
+                <DialogTitle>Add New Document Tracking Data</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>

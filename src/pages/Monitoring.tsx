@@ -366,7 +366,9 @@ export default function Monitoring() {
     const target = new Date(targetDate);
     const actual = new Date(actualDate);
     
-    return actual > target ? 'Over Due' : 'Ahead';
+    if (actual > target) return 'Over Due';
+    if (actual.getTime() === target.getTime()) return 'On Time';
+    return 'Ahead';
   };
   // Group data by file_name and filter by PIC
   const groupedData = monitoringData.reduce((acc, item) => {
@@ -705,6 +707,8 @@ export default function Monitoring() {
                       <TableCell>
                         {getSubmitExplanation(targetDate, actualDate) === 'Over Due' ? (
                           <span className="text-destructive font-medium">Over Due</span>
+                        ) : getSubmitExplanation(targetDate, actualDate) === 'On Time' ? (
+                          <span className="text-blue-600 font-medium">On Time</span>
                         ) : getSubmitExplanation(targetDate, actualDate) === 'Ahead' ? (
                           <span className="text-green-600 font-medium">Ahead</span>
                         ) : (

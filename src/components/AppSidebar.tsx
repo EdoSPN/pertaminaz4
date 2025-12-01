@@ -36,7 +36,7 @@ const menuItems = [
   { title: 'Unit Estimator', url: '/calculator', icon: Calculator },
   { title: 'Data Repository', url: '/repository', icon: Database },
   { title: 'User Management', url: '/users', icon: Shield, adminOnly: true },
-];
+].sort((a, b) => a.title.localeCompare(b.title));
 
 const documentTrackingItems = [
   { 

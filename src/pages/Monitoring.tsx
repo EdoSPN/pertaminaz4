@@ -366,6 +366,10 @@ export default function Monitoring() {
     const target = new Date(targetDate);
     const actual = new Date(actualDate);
     
+    // Normalize to compare dates only (ignore time)
+    target.setHours(0, 0, 0, 0);
+    actual.setHours(0, 0, 0, 0);
+    
     if (actual > target) return 'Over Due';
     if (actual.getTime() === target.getTime()) return 'On Time';
     return 'Ahead';

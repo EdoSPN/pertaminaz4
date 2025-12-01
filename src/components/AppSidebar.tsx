@@ -35,6 +35,7 @@ const menuItems = [
   { title: 'Power BI Analysis', url: '/powerbi', icon: BarChart3 },
   { title: 'Unit Estimator', url: '/calculator', icon: Calculator },
   { title: 'Data Repository', url: '/repository', icon: Database },
+  { title: 'Document Tracking', url: '#', icon: Monitor, isNested: true },
   { title: 'User Management', url: '/users', icon: Shield, adminOnly: true },
 ].sort((a, b) => a.title.localeCompare(b.title));
 
@@ -95,67 +96,70 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {visibleMenuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                    <NavLink to={item.url} className="flex items-center gap-3">
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-              
-              {/* Document Tracking with nested structure */}
-              <Collapsible open={openDocTracking} onOpenChange={setOpenDocTracking} className="group/collapsible">
-                <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton className="flex items-center gap-3">
-                      <Monitor className="h-4 w-4" />
-                      {!collapsed && <span>Document Tracking</span>}
-                      {!collapsed && (
-                        <ChevronRight className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-90" />
-                      )}
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub>
-                      {documentTrackingItems.map((area) => (
-                        area.items.length === 0 ? (
-                          <SidebarMenuSubItem key={area.title}>
-                            <SidebarMenuSubButton>
-                              {area.title}
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        ) : (
-                          <Collapsible key={area.title} open={openArea2} onOpenChange={setOpenArea2} className="group/area">
-                            <SidebarMenuSubItem>
-                              <CollapsibleTrigger asChild>
-                                <SidebarMenuSubButton className="flex items-center gap-2">
+                item.isNested ? (
+                  // Document Tracking with nested structure
+                  <Collapsible key={item.title} open={openDocTracking} onOpenChange={setOpenDocTracking} className="group/collapsible">
+                    <SidebarMenuItem>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton className="flex items-center gap-3">
+                          <item.icon className="h-4 w-4" />
+                          {!collapsed && <span>{item.title}</span>}
+                          {!collapsed && (
+                            <ChevronRight className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                          )}
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                          {documentTrackingItems.map((area) => (
+                            area.items.length === 0 ? (
+                              <SidebarMenuSubItem key={area.title}>
+                                <SidebarMenuSubButton>
                                   {area.title}
-                                  <ChevronRight className="ml-auto h-3 w-3 transition-transform group-data-[state=open]/area:rotate-90" />
                                 </SidebarMenuSubButton>
-                              </CollapsibleTrigger>
-                            </SidebarMenuSubItem>
-                            <CollapsibleContent>
-                              <SidebarMenuSub>
-                                {area.items.map((subItem) => (
-                                  <SidebarMenuSubItem key={subItem.title}>
-                                    <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
-                                      <NavLink to={subItem.url}>
-                                        {subItem.title}
-                                      </NavLink>
+                              </SidebarMenuSubItem>
+                            ) : (
+                              <Collapsible key={area.title} open={openArea2} onOpenChange={setOpenArea2} className="group/area">
+                                <SidebarMenuSubItem>
+                                  <CollapsibleTrigger asChild>
+                                    <SidebarMenuSubButton className="flex items-center gap-2">
+                                      {area.title}
+                                      <ChevronRight className="ml-auto h-3 w-3 transition-transform group-data-[state=open]/area:rotate-90" />
                                     </SidebarMenuSubButton>
-                                  </SidebarMenuSubItem>
-                                ))}
-                              </SidebarMenuSub>
-                            </CollapsibleContent>
-                          </Collapsible>
-                        )
-                      ))}
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                </SidebarMenuItem>
-              </Collapsible>
+                                  </CollapsibleTrigger>
+                                </SidebarMenuSubItem>
+                                <CollapsibleContent>
+                                  <SidebarMenuSub>
+                                    {area.items.map((subItem) => (
+                                      <SidebarMenuSubItem key={subItem.title}>
+                                        <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                                          <NavLink to={subItem.url}>
+                                            {subItem.title}
+                                          </NavLink>
+                                        </SidebarMenuSubButton>
+                                      </SidebarMenuSubItem>
+                                    ))}
+                                  </SidebarMenuSub>
+                                </CollapsibleContent>
+                              </Collapsible>
+                            )
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </SidebarMenuItem>
+                  </Collapsible>
+                ) : (
+                  // Regular menu item
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={isActive(item.url)}>
+                      <NavLink to={item.url} className="flex items-center gap-3">
+                        <item.icon className="h-4 w-4" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

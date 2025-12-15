@@ -39,16 +39,34 @@ const menuItems = [
   { title: 'User Management', url: '/users', icon: Shield, adminOnly: true },
 ].sort((a, b) => a.title.localeCompare(b.title));
 
-const documentTrackingItems = [
+type SubItem = { title: string; url: string };
+type MenuItem = { title: string; url: string; subItems?: SubItem[] };
+type AreaItem = { title: string; items: MenuItem[] };
+
+const documentTrackingItems: AreaItem[] = [
   { 
     title: 'Area 1', 
-    items: [] 
+    items: [
+      { title: 'Adera', url: '/monitoring/adera' },
+      { title: 'Pendopo', url: '/monitoring/pendopo' },
+      { title: 'Ramba', url: '/monitoring/ramba' }
+    ].sort((a, b) => a.title.localeCompare(b.title))
   },
   { 
     title: 'Area 2', 
     items: [
-      { title: 'Limau', url: '/monitoring/limau' },
-      { title: 'Prabumulih', url: '/monitoring' }
+      { 
+        title: 'Limau', 
+        url: '/monitoring/limau'
+      },
+      { 
+        title: 'Prabumulih', 
+        url: '#',
+        subItems: [
+          { title: 'Feed Pemasangan LP - MP Compressor di SPG PKGJ', url: '/monitoring/prabumulih-compressor' },
+          { title: 'Feed Pengembangan TMB - KRG', url: '/monitoring' }
+        ].sort((a, b) => a.title.localeCompare(b.title))
+      }
     ].sort((a, b) => a.title.localeCompare(b.title))
   }
 ].sort((a, b) => a.title.localeCompare(b.title));
@@ -59,7 +77,8 @@ export function AppSidebar() {
   const { signOut, user } = useAuth();
   const [userRole, setUserRole] = useState<string>('');
   const [openDocTracking, setOpenDocTracking] = useState(true);
-  const [openArea2, setOpenArea2] = useState(true);
+  const [openAreas, setOpenAreas] = useState<Record<string, boolean>>({ 'Area 1': true, 'Area 2': true });
+  const [openSubItems, setOpenSubItems] = useState<Record<string, boolean>>({ 'Prabumulih': true });
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -112,25 +131,54 @@ export function AppSidebar() {
                       <CollapsibleContent>
                         <SidebarMenuSub>
                           {documentTrackingItems.map((area) => (
-                            area.items.length === 0 ? (
-                              <SidebarMenuSubItem key={area.title}>
-                                <SidebarMenuSubButton>
-                                  {area.title}
-                                </SidebarMenuSubButton>
+                            <Collapsible 
+                              key={area.title} 
+                              open={openAreas[area.title]} 
+                              onOpenChange={(open) => setOpenAreas(prev => ({ ...prev, [area.title]: open }))} 
+                              className="group/area"
+                            >
+                              <SidebarMenuSubItem>
+                                <CollapsibleTrigger asChild>
+                                  <SidebarMenuSubButton className="flex items-center gap-2">
+                                    {area.title}
+                                    <ChevronRight className="ml-auto h-3 w-3 transition-transform group-data-[state=open]/area:rotate-90" />
+                                  </SidebarMenuSubButton>
+                                </CollapsibleTrigger>
                               </SidebarMenuSubItem>
-                            ) : (
-                              <Collapsible key={area.title} open={openArea2} onOpenChange={setOpenArea2} className="group/area">
-                                <SidebarMenuSubItem>
-                                  <CollapsibleTrigger asChild>
-                                    <SidebarMenuSubButton className="flex items-center gap-2">
-                                      {area.title}
-                                      <ChevronRight className="ml-auto h-3 w-3 transition-transform group-data-[state=open]/area:rotate-90" />
-                                    </SidebarMenuSubButton>
-                                  </CollapsibleTrigger>
-                                </SidebarMenuSubItem>
-                                <CollapsibleContent>
-                                  <SidebarMenuSub>
-                                    {area.items.map((subItem) => (
+                              <CollapsibleContent>
+                                <SidebarMenuSub>
+                                  {area.items.map((subItem) => {
+                                    const hasSubItems = 'subItems' in subItem && subItem.subItems && subItem.subItems.length > 0;
+                                    return hasSubItems ? (
+                                      <Collapsible 
+                                        key={subItem.title} 
+                                        open={openSubItems[subItem.title]} 
+                                        onOpenChange={(open) => setOpenSubItems(prev => ({ ...prev, [subItem.title]: open }))} 
+                                        className="group/subitem"
+                                      >
+                                        <SidebarMenuSubItem>
+                                          <CollapsibleTrigger asChild>
+                                            <SidebarMenuSubButton className="flex items-center gap-2">
+                                              {subItem.title}
+                                              <ChevronRight className="ml-auto h-3 w-3 transition-transform group-data-[state=open]/subitem:rotate-90" />
+                                            </SidebarMenuSubButton>
+                                          </CollapsibleTrigger>
+                                        </SidebarMenuSubItem>
+                                        <CollapsibleContent>
+                                          <SidebarMenuSub>
+                                            {subItem.subItems?.map((deepItem) => (
+                                              <SidebarMenuSubItem key={deepItem.title}>
+                                                <SidebarMenuSubButton asChild isActive={isActive(deepItem.url)}>
+                                                  <NavLink to={deepItem.url}>
+                                                    {deepItem.title}
+                                                  </NavLink>
+                                                </SidebarMenuSubButton>
+                                              </SidebarMenuSubItem>
+                                            ))}
+                                          </SidebarMenuSub>
+                                        </CollapsibleContent>
+                                      </Collapsible>
+                                    ) : (
                                       <SidebarMenuSubItem key={subItem.title}>
                                         <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
                                           <NavLink to={subItem.url}>
@@ -138,11 +186,11 @@ export function AppSidebar() {
                                           </NavLink>
                                         </SidebarMenuSubButton>
                                       </SidebarMenuSubItem>
-                                    ))}
-                                  </SidebarMenuSub>
-                                </CollapsibleContent>
-                              </Collapsible>
-                            )
+                                    );
+                                  })}
+                                </SidebarMenuSub>
+                              </CollapsibleContent>
+                            </Collapsible>
                           ))}
                         </SidebarMenuSub>
                       </CollapsibleContent>

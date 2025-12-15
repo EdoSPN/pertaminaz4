@@ -57,14 +57,14 @@ const documentTrackingItems: AreaItem[] = [
     items: [
       { 
         title: 'Limau', 
-        url: '/monitoring/limau'
+        url: '/monitoring'
       },
       { 
         title: 'Prabumulih', 
         url: '#',
         subItems: [
           { title: 'Feed Pemasangan LP - MP Compressor di SPG PKGJ', url: '/monitoring/prabumulih-compressor' },
-          { title: 'Feed Pengembangan TMB - KRG', url: '/monitoring' }
+          { title: 'Feed Pengembangan TMB - KRG', url: '/monitoring/prabumulih-tmb' }
         ].sort((a, b) => a.title.localeCompare(b.title))
       }
     ].sort((a, b) => a.title.localeCompare(b.title))

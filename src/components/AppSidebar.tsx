@@ -39,8 +39,7 @@ const menuItems = [
   { title: 'User Management', url: '/users', icon: Shield, adminOnly: true },
 ].sort((a, b) => a.title.localeCompare(b.title));
 
-type SubItem = { title: string; url: string };
-type MenuItem = { title: string; url: string; subItems?: SubItem[] };
+type MenuItem = { title: string; url: string };
 type AreaItem = { title: string; items: MenuItem[] };
 
 const documentTrackingItems: AreaItem[] = [
@@ -55,18 +54,8 @@ const documentTrackingItems: AreaItem[] = [
   { 
     title: 'Area 2', 
     items: [
-      { 
-        title: 'Limau', 
-        url: '/monitoring'
-      },
-      { 
-        title: 'Prabumulih', 
-        url: '#',
-        subItems: [
-          { title: 'Feed Pemasangan LP - MP Compressor di SPG PKGJ', url: '/monitoring/prabumulih-compressor' },
-          { title: 'Feed Pengembangan TMB - KRG', url: '/monitoring/prabumulih-tmb' }
-        ].sort((a, b) => a.title.localeCompare(b.title))
-      }
+      { title: 'Limau', url: '/monitoring' },
+      { title: 'Prabumulih', url: '/prabumulih' }
     ].sort((a, b) => a.title.localeCompare(b.title))
   }
 ].sort((a, b) => a.title.localeCompare(b.title));
@@ -78,7 +67,6 @@ export function AppSidebar() {
   const [userRole, setUserRole] = useState<string>('');
   const [openDocTracking, setOpenDocTracking] = useState(true);
   const [openAreas, setOpenAreas] = useState<Record<string, boolean>>({ 'Area 1': true, 'Area 2': true });
-  const [openSubItems, setOpenSubItems] = useState<Record<string, boolean>>({ 'Prabumulih': true });
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -147,47 +135,15 @@ export function AppSidebar() {
                               </SidebarMenuSubItem>
                               <CollapsibleContent>
                                 <SidebarMenuSub>
-                                  {area.items.map((subItem) => {
-                                    const hasSubItems = 'subItems' in subItem && subItem.subItems && subItem.subItems.length > 0;
-                                    return hasSubItems ? (
-                                      <Collapsible 
-                                        key={subItem.title} 
-                                        open={openSubItems[subItem.title]} 
-                                        onOpenChange={(open) => setOpenSubItems(prev => ({ ...prev, [subItem.title]: open }))} 
-                                        className="group/subitem"
-                                      >
-                                        <SidebarMenuSubItem>
-                                          <CollapsibleTrigger asChild>
-                                            <SidebarMenuSubButton className="flex items-center gap-2">
-                                              {subItem.title}
-                                              <ChevronRight className="ml-auto h-3 w-3 transition-transform group-data-[state=open]/subitem:rotate-90" />
-                                            </SidebarMenuSubButton>
-                                          </CollapsibleTrigger>
-                                        </SidebarMenuSubItem>
-                                        <CollapsibleContent>
-                                          <SidebarMenuSub>
-                                            {subItem.subItems?.map((deepItem) => (
-                                              <SidebarMenuSubItem key={deepItem.title}>
-                                                <SidebarMenuSubButton asChild isActive={isActive(deepItem.url)}>
-                                                  <NavLink to={deepItem.url}>
-                                                    {deepItem.title}
-                                                  </NavLink>
-                                                </SidebarMenuSubButton>
-                                              </SidebarMenuSubItem>
-                                            ))}
-                                          </SidebarMenuSub>
-                                        </CollapsibleContent>
-                                      </Collapsible>
-                                    ) : (
-                                      <SidebarMenuSubItem key={subItem.title}>
-                                        <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
-                                          <NavLink to={subItem.url}>
-                                            {subItem.title}
-                                          </NavLink>
-                                        </SidebarMenuSubButton>
-                                      </SidebarMenuSubItem>
-                                    );
-                                  })}
+                                  {area.items.map((subItem) => (
+                                    <SidebarMenuSubItem key={subItem.title}>
+                                      <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                                        <NavLink to={subItem.url}>
+                                          {subItem.title}
+                                        </NavLink>
+                                      </SidebarMenuSubButton>
+                                    </SidebarMenuSubItem>
+                                  ))}
                                 </SidebarMenuSub>
                               </CollapsibleContent>
                             </Collapsible>

@@ -15,6 +15,7 @@ import PowerBI from "./pages/PowerBI";
 import Calculator from "./pages/Calculator";
 import Repository from "./pages/Repository";
 import Monitoring from "./pages/Monitoring";
+import Prabumulih from "./pages/Prabumulih";
 import UserManagement from "./pages/UserManagement";
 import NotFound from "./pages/NotFound";
 
@@ -94,6 +95,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <Monitoring />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/prabumulih"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Prabumulih />
                   </AppLayout>
                 </ProtectedRoute>
               }

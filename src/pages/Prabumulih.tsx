@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -53,6 +54,7 @@ interface Project {
 }
 
 export default function Prabumulih() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -287,9 +289,13 @@ export default function Prabumulih() {
                 </TableHeader>
                 <TableBody>
                   {projects.map((project, index) => (
-                    <TableRow key={project.id}>
+                    <TableRow 
+                      key={project.id} 
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => navigate(`/prabumulih/${project.id}`)}
+                    >
                       <TableCell>{index + 1}</TableCell>
-                      <TableCell className="font-medium">{project.project_name}</TableCell>
+                      <TableCell className="font-medium text-primary hover:underline">{project.project_name}</TableCell>
                       <TableCell className="max-w-xs truncate">{project.description || '-'}</TableCell>
                       <TableCell>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -303,13 +309,13 @@ export default function Prabumulih() {
                       </TableCell>
                       <TableCell>{format(new Date(project.created_at), 'dd MMM yyyy')}</TableCell>
                       {(canEdit || canDelete) && (
-                        <TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center gap-2">
                             {canEdit && (
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => handleOpenDialog(project)}
+                                onClick={(e) => { e.stopPropagation(); handleOpenDialog(project); }}
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
@@ -318,7 +324,7 @@ export default function Prabumulih() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => openDeleteDialog(project)}
+                                onClick={(e) => { e.stopPropagation(); openDeleteDialog(project); }}
                                 className="text-destructive hover:text-destructive"
                               >
                                 <Trash2 className="h-4 w-4" />

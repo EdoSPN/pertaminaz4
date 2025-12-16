@@ -16,6 +16,7 @@ import Calculator from "./pages/Calculator";
 import Repository from "./pages/Repository";
 import Monitoring from "./pages/Monitoring";
 import Prabumulih from "./pages/Prabumulih";
+import PrabumulihProjectDetail from "./pages/PrabumulihProjectDetail";
 import UserManagement from "./pages/UserManagement";
 import NotFound from "./pages/NotFound";
 
@@ -105,6 +106,26 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <Prabumulih />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/prabumulih/:projectId"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <PrabumulihProjectDetail />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/monitoring/ok-rt"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Monitoring />
                   </AppLayout>
                 </ProtectedRoute>
               }

@@ -55,6 +55,7 @@ const documentTrackingItems: AreaItem[] = [
     title: 'Area 2', 
     items: [
       { title: 'Limau', url: '/monitoring' },
+      { title: 'OK - RT', url: '/monitoring/ok-rt' },
       { title: 'Prabumulih', url: '/prabumulih' }
     ].sort((a, b) => a.title.localeCompare(b.title))
   }

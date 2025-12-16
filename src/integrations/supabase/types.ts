@@ -169,6 +169,95 @@ export type Database = {
         }
         Relationships: []
       }
+      prabumulih_monitoring_data: {
+        Row: {
+          actual_submit_ifa: string | null
+          actual_submit_ifb: string | null
+          actual_submit_ifr: string | null
+          approval_comment: string | null
+          approval_status: Database["public"]["Enums"]["approval_status"]
+          created_at: string | null
+          file_name: string
+          id: string
+          pic: string | null
+          project_id: string
+          status_category: Database["public"]["Enums"]["status_category"]
+          status_description_ifa:
+            | Database["public"]["Enums"]["status_description"]
+            | null
+          status_description_ifb:
+            | Database["public"]["Enums"]["status_description"]
+            | null
+          status_description_ifr:
+            | Database["public"]["Enums"]["status_description"]
+            | null
+          target_submit_ifa: string | null
+          target_submit_ifb: string | null
+          target_submit_ifr: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          actual_submit_ifa?: string | null
+          actual_submit_ifb?: string | null
+          actual_submit_ifr?: string | null
+          approval_comment?: string | null
+          approval_status?: Database["public"]["Enums"]["approval_status"]
+          created_at?: string | null
+          file_name: string
+          id?: string
+          pic?: string | null
+          project_id: string
+          status_category?: Database["public"]["Enums"]["status_category"]
+          status_description_ifa?:
+            | Database["public"]["Enums"]["status_description"]
+            | null
+          status_description_ifb?:
+            | Database["public"]["Enums"]["status_description"]
+            | null
+          status_description_ifr?:
+            | Database["public"]["Enums"]["status_description"]
+            | null
+          target_submit_ifa?: string | null
+          target_submit_ifb?: string | null
+          target_submit_ifr?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          actual_submit_ifa?: string | null
+          actual_submit_ifb?: string | null
+          actual_submit_ifr?: string | null
+          approval_comment?: string | null
+          approval_status?: Database["public"]["Enums"]["approval_status"]
+          created_at?: string | null
+          file_name?: string
+          id?: string
+          pic?: string | null
+          project_id?: string
+          status_category?: Database["public"]["Enums"]["status_category"]
+          status_description_ifa?:
+            | Database["public"]["Enums"]["status_description"]
+            | null
+          status_description_ifb?:
+            | Database["public"]["Enums"]["status_description"]
+            | null
+          status_description_ifr?:
+            | Database["public"]["Enums"]["status_description"]
+            | null
+          target_submit_ifa?: string | null
+          target_submit_ifb?: string | null
+          target_submit_ifr?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prabumulih_monitoring_data_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "prabumulih_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prabumulih_projects: {
         Row: {
           created_at: string

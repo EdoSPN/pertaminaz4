@@ -14,9 +14,12 @@ import Dashboard from "./pages/Dashboard";
 import PowerBI from "./pages/PowerBI";
 import Calculator from "./pages/Calculator";
 import Repository from "./pages/Repository";
-import Monitoring from "./pages/Monitoring";
 import Prabumulih from "./pages/Prabumulih";
 import PrabumulihProjectDetail from "./pages/PrabumulihProjectDetail";
+import Limau from "./pages/Limau";
+import LimauProjectDetail from "./pages/LimauProjectDetail";
+import OkRt from "./pages/OkRt";
+import OkRtProjectDetail from "./pages/OkRtProjectDetail";
 import UserManagement from "./pages/UserManagement";
 import NotFound from "./pages/NotFound";
 
@@ -91,16 +94,6 @@ const App = () => (
               }
             />
             <Route
-              path="/monitoring"
-              element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <Monitoring />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
               path="/prabumulih"
               element={
                 <ProtectedRoute>
@@ -121,11 +114,41 @@ const App = () => (
               }
             />
             <Route
-              path="/monitoring/ok-rt"
+              path="/limau"
               element={
                 <ProtectedRoute>
                   <AppLayout>
-                    <Monitoring />
+                    <Limau />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/limau/:projectId"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <LimauProjectDetail />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/ok-rt"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <OkRt />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/ok-rt/:projectId"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <OkRtProjectDetail />
                   </AppLayout>
                 </ProtectedRoute>
               }

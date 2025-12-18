@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AuthProvider } from "@/lib/auth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -50,6 +50,13 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
+            {/* Backward-compatible redirects (old /monitoring URLs) */}
+            <Route path="/monitoring/ok-rt" element={<Navigate to="/ok-rt" replace />} />
+            <Route path="/monitoring/limau" element={<Navigate to="/limau" replace />} />
+            <Route path="/monitoring/prabumulih" element={<Navigate to="/prabumulih" replace />} />
+            <Route path="/monitoring" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/monitoring/*" element={<Navigate to="/dashboard" replace />} />
+
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />

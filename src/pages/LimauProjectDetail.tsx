@@ -21,6 +21,7 @@ interface MonitoringData {
   id: string;
   project_id: string;
   file_name: string;
+  document_number: string | null;
   status_category: 'IFR' | 'IFA' | 'IFB';
   status_description_ifr: 'Not Yet' | 'In-Progress' | 'Complete';
   status_description_ifa: 'Not Yet' | 'In-Progress' | 'Complete';
@@ -71,6 +72,8 @@ export default function LimauProjectDetail() {
   const [existingPics, setExistingPics] = useState<string[]>([]);
   const [picComboOpen, setPicComboOpen] = useState(false);
   const [editPicComboOpen, setEditPicComboOpen] = useState(false);
+  const [documentNumber, setDocumentNumber] = useState('');
+  const [editDocumentNumber, setEditDocumentNumber] = useState('');
 
   useEffect(() => {
     if (projectId) {
@@ -163,6 +166,7 @@ export default function LimauProjectDetail() {
     setCurrentEditItem(item);
     setEditFileName(item.file_name);
     setEditPic(item.pic || '');
+    setEditDocumentNumber(item.document_number || '');
     const targetDate = item.status_category === 'IFR' 
       ? item.target_submit_ifr 
       : item.status_category === 'IFA' 
@@ -218,6 +222,7 @@ export default function LimauProjectDetail() {
     const commonUpdates = {
       file_name: editFileName,
       pic: editPic.trim() || null,
+      document_number: editDocumentNumber.trim() || null,
     };
     const { error } = await supabase
       .from('limau_monitoring_data')
@@ -306,6 +311,7 @@ export default function LimauProjectDetail() {
         {
           project_id: projectId,
           file_name: fileName,
+          document_number: documentNumber.trim() || null,
           pic: pic.trim() || null,
           status_category: 'IFR',
           target_submit_ifr: targetSubmitDate ? targetSubmitDate.toISOString() : null,
@@ -315,6 +321,7 @@ export default function LimauProjectDetail() {
         {
           project_id: projectId,
           file_name: fileName,
+          document_number: documentNumber.trim() || null,
           pic: pic.trim() || null,
           status_category: 'IFA',
           target_submit_ifr: targetSubmitDate ? targetSubmitDate.toISOString() : null,
@@ -324,6 +331,7 @@ export default function LimauProjectDetail() {
         {
           project_id: projectId,
           file_name: fileName,
+          document_number: documentNumber.trim() || null,
           pic: pic.trim() || null,
           status_category: 'IFB',
           target_submit_ifr: targetSubmitDate ? targetSubmitDate.toISOString() : null,
@@ -338,6 +346,7 @@ export default function LimauProjectDetail() {
       setDialogOpen(false);
       setPic('');
       setFileName('');
+      setDocumentNumber('');
       setTargetSubmitDate(undefined);
       setTargetSubmitDateIFA(undefined);
       setTargetSubmitDateIFB(undefined);
@@ -368,6 +377,7 @@ export default function LimauProjectDetail() {
     if (!acc[item.file_name]) {
       acc[item.file_name] = {
         file_name: item.file_name,
+        document_number: item.document_number,
         pic: item.pic,
         id: item.id,
         ifr: null as MonitoringData | null,
@@ -379,7 +389,7 @@ export default function LimauProjectDetail() {
     if (item.status_category === 'IFA') acc[item.file_name].ifa = item;
     if (item.status_category === 'IFB') acc[item.file_name].ifb = item;
     return acc;
-  }, {} as Record<string, { file_name: string; pic: string | null; id: string; ifr: MonitoringData | null; ifa: MonitoringData | null; ifb: MonitoringData | null }>);
+  }, {} as Record<string, { file_name: string; document_number: string | null; pic: string | null; id: string; ifr: MonitoringData | null; ifa: MonitoringData | null; ifb: MonitoringData | null }>);
 
   const groupedDataArray = Object.values(groupedData);
 
@@ -429,9 +439,13 @@ export default function LimauProjectDetail() {
                 <DialogTitle>Add New Document Tracking Data</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                <div>
+              <div>
                   <Label htmlFor="fileName">File Name</Label>
                   <Input id="fileName" value={fileName} onChange={(e) => setFileName(e.target.value)} placeholder="Enter file name" />
+                </div>
+                <div>
+                  <Label htmlFor="documentNumber">Document Number</Label>
+                  <Input id="documentNumber" value={documentNumber} onChange={(e) => setDocumentNumber(e.target.value)} placeholder="Enter document number" />
                 </div>
                 <div>
                   <Label htmlFor="pic">PIC</Label>
@@ -523,6 +537,7 @@ export default function LimauProjectDetail() {
           <TableHeader>
             <TableRow>
               <TableHead className="w-12">No</TableHead>
+              <TableHead>Doc Number</TableHead>
               <TableHead>File Name</TableHead>
               <TableHead>Status Category</TableHead>
               <TableHead>Status Description</TableHead>
@@ -536,9 +551,9 @@ export default function LimauProjectDetail() {
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={10} className="text-center py-8">Loading...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={11} className="text-center py-8">Loading...</TableCell></TableRow>
             ) : groupedDataArray.length === 0 ? (
-              <TableRow><TableCell colSpan={10} className="text-center py-8">No data available</TableCell></TableRow>
+              <TableRow><TableCell colSpan={11} className="text-center py-8">No data available</TableCell></TableRow>
             ) : (
               groupedDataArray.map((group, groupIndex) => {
                 const categories = ['IFR', 'IFA', 'IFB'] as const;
@@ -552,6 +567,7 @@ export default function LimauProjectDetail() {
                   return (
                     <TableRow key={`${group.file_name}-${category}`}>
                       {isFirstRow && <TableCell rowSpan={visibleCategories.length}>{groupIndex + 1}</TableCell>}
+                      {isFirstRow && <TableCell rowSpan={visibleCategories.length}>{group.document_number || '-'}</TableCell>}
                       {isFirstRow && <TableCell rowSpan={visibleCategories.length}>{group.file_name}</TableCell>}
                       <TableCell>{category}</TableCell>
                       <TableCell>{statusDescription}</TableCell>
@@ -665,6 +681,10 @@ export default function LimauProjectDetail() {
             <div>
               <Label htmlFor="editFileName">File Name</Label>
               <Input id="editFileName" value={editFileName} onChange={(e) => setEditFileName(e.target.value)} placeholder="Enter file name" />
+            </div>
+            <div>
+              <Label htmlFor="editDocumentNumber">Document Number</Label>
+              <Input id="editDocumentNumber" value={editDocumentNumber} onChange={(e) => setEditDocumentNumber(e.target.value)} placeholder="Enter document number" />
             </div>
             <div>
               <Label htmlFor="editPic">PIC</Label>

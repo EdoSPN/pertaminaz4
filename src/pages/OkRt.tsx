@@ -51,6 +51,7 @@ interface Project {
   created_by: string;
   created_at: string;
   updated_at: string;
+  finished_at: string | null;
 }
 
 export default function OkRt() {
@@ -131,13 +132,24 @@ export default function OkRt() {
     }
 
     if (selectedProject) {
+      const updateData: Record<string, unknown> = {
+        project_name: formData.project_name,
+        description: formData.description || null,
+        status: formData.status,
+      };
+
+      // Auto-fill finished_at when status is changed to Completed
+      if (formData.status === 'Completed' && selectedProject.status !== 'Completed') {
+        updateData.finished_at = new Date().toISOString();
+      }
+      // Clear finished_at if status is changed from Completed to something else
+      if (formData.status !== 'Completed' && selectedProject.status === 'Completed') {
+        updateData.finished_at = null;
+      }
+
       const { error } = await supabase
         .from('okrt_projects')
-        .update({
-          project_name: formData.project_name,
-          description: formData.description || null,
-          status: formData.status,
-        })
+        .update(updateData)
         .eq('id', selectedProject.id);
       
       if (error) {
@@ -282,6 +294,7 @@ export default function OkRt() {
                     <TableHead>Description</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Created At</TableHead>
+                    <TableHead>Finish At</TableHead>
                     {(canEdit || canDelete) && <TableHead className="w-24">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
@@ -306,6 +319,7 @@ export default function OkRt() {
                         </span>
                       </TableCell>
                       <TableCell>{format(new Date(project.created_at), 'dd MMM yyyy')}</TableCell>
+                      <TableCell>{project.finished_at ? format(new Date(project.finished_at), 'dd MMM yyyy') : '-'}</TableCell>
                       {(canEdit || canDelete) && (
                         <TableCell onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center gap-2">

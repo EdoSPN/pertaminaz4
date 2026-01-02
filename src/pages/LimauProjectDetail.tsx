@@ -650,24 +650,53 @@ export default function LimauProjectDetail() {
           <DialogHeader>
             <DialogTitle>Edit Status ({currentEditItem?.status_category})</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="statusDescription">Status Description</Label>
-              <Select value={editStatusDescription} onValueChange={(value) => setEditStatusDescription(value as 'Not Yet' | 'In-Progress' | 'Complete')}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Not Yet">Not Yet</SelectItem>
-                  <SelectItem value="In-Progress">In-Progress</SelectItem>
-                  <SelectItem value="Complete">Complete</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="actualSubmit">Actual Submit ({currentEditItem?.status_category})</Label>
-              <Input id="actualSubmit" type="date" value={editActualSubmit} onChange={(e) => setEditActualSubmit(e.target.value)} />
-            </div>
-            <Button onClick={handleSaveEdit} className="w-full">Save Changes</Button>
-          </div>
+          {(() => {
+            const targetDate = currentEditItem?.status_category === 'IFR' 
+              ? currentEditItem?.target_submit_ifr 
+              : currentEditItem?.status_category === 'IFA' 
+              ? currentEditItem?.target_submit_ifa 
+              : currentEditItem?.target_submit_ifb;
+            const actualDate = currentEditItem?.status_category === 'IFR' 
+              ? currentEditItem?.actual_submit_ifr 
+              : currentEditItem?.status_category === 'IFA' 
+              ? currentEditItem?.actual_submit_ifa 
+              : currentEditItem?.actual_submit_ifb;
+            const submitExplanation = getSubmitExplanation(targetDate ?? null, actualDate ?? null);
+            const isActualSubmitLocked = userRole === 'user' && submitExplanation === 'Over Due';
+            
+            return (
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="statusDescription">Status Description</Label>
+                  <Select value={editStatusDescription} onValueChange={(value) => setEditStatusDescription(value as 'Not Yet' | 'In-Progress' | 'Complete')}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Not Yet">Not Yet</SelectItem>
+                      <SelectItem value="In-Progress">In-Progress</SelectItem>
+                      <SelectItem value="Complete">Complete</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="actualSubmit">Actual Submit ({currentEditItem?.status_category})</Label>
+                  <Input 
+                    id="actualSubmit" 
+                    type="date" 
+                    value={editActualSubmit} 
+                    onChange={(e) => setEditActualSubmit(e.target.value)} 
+                    disabled={isActualSubmitLocked}
+                    className={isActualSubmitLocked ? "bg-muted cursor-not-allowed" : ""}
+                  />
+                  {isActualSubmitLocked && (
+                    <p className="text-xs text-destructive mt-1">
+                      Actual Submit is locked because submission is Over Due. Contact Admin to modify.
+                    </p>
+                  )}
+                </div>
+                <Button onClick={handleSaveEdit} className="w-full">Save Changes</Button>
+              </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
 

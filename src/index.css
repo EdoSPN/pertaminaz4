@@ -134,3 +134,48 @@ All colors MUST be HSL.
     background: var(--gradient-subtle);
   }
 }
+
+/* Print styles for Data Recap */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  
+  #recap-content,
+  #recap-content * {
+    visibility: visible;
+  }
+  
+  #recap-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 20px;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-only {
+    display: block !important;
+  }
+  
+  #recap-content table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  #recap-content th,
+  #recap-content td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+  }
+  
+  #recap-content th {
+    background-color: #f5f5f5;
+    font-weight: bold;
+  }
+}

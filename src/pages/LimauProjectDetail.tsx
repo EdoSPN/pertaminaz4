@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Pencil, CalendarIcon, Check, ChevronsUpDown, Trash2, ArrowLeft } from 'lucide-react';
+import { Plus, Pencil, CalendarIcon, Check, ChevronsUpDown, Trash2, ArrowLeft, FileText, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
@@ -74,6 +74,7 @@ export default function LimauProjectDetail() {
   const [editPicComboOpen, setEditPicComboOpen] = useState(false);
   const [documentNumber, setDocumentNumber] = useState('');
   const [editDocumentNumber, setEditDocumentNumber] = useState('');
+  const [recapDialogOpen, setRecapDialogOpen] = useState(false);
 
   useEffect(() => {
     if (projectId) {
@@ -371,6 +372,38 @@ export default function LimauProjectDetail() {
     return 'Ahead';
   };
 
+  const getRecapData = () => {
+    const recapGroups = monitoringData.reduce((acc, item) => {
+      if (!acc[item.file_name]) {
+        acc[item.file_name] = {
+          document_number: item.document_number,
+          file_name: item.file_name,
+          pic: item.pic,
+          status_ifr: 'Not Yet' as string,
+          status_ifa: 'Not Yet' as string,
+          status_ifb: 'Not Yet' as string,
+        };
+      }
+      if (item.status_category === 'IFR') {
+        acc[item.file_name].status_ifr = item.status_description_ifr || 'Not Yet';
+      }
+      if (item.status_category === 'IFA') {
+        acc[item.file_name].status_ifa = item.status_description_ifa || 'Not Yet';
+      }
+      if (item.status_category === 'IFB') {
+        acc[item.file_name].status_ifb = item.status_description_ifb || 'Not Yet';
+      }
+      return acc;
+    }, {} as Record<string, { document_number: string | null; file_name: string; pic: string | null; status_ifr: string; status_ifa: string; status_ifb: string }>);
+
+    return Object.values(recapGroups).sort((a, b) => {
+      const picA = (a.pic || '').toLowerCase();
+      const picB = (b.pic || '').toLowerCase();
+      if (picA !== picB) return picA.localeCompare(picB);
+      return a.file_name.toLowerCase().localeCompare(b.file_name.toLowerCase());
+    });
+  };
+
   const groupedData = monitoringData.reduce((acc, item) => {
     const picMatch = picFilter === 'all' || item.pic === picFilter;
     if (!picMatch) return acc;
@@ -429,107 +462,169 @@ export default function LimauProjectDetail() {
             </SelectContent>
           </Select>
         </div>
-        {canAddNew && (
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <div className="flex gap-2">
+          {canAddNew && (
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button><Plus className="h-4 w-4 mr-2" />Add Data</Button>
+              </DialogTrigger>
+              <DialogContent className="max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Add New Document Tracking Data</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                <div>
+                    <Label htmlFor="fileName">File Name</Label>
+                    <Input id="fileName" value={fileName} onChange={(e) => setFileName(e.target.value)} placeholder="Enter file name" />
+                  </div>
+                  <div>
+                    <Label htmlFor="documentNumber">Document Number</Label>
+                    <Input id="documentNumber" value={documentNumber} onChange={(e) => setDocumentNumber(e.target.value)} placeholder="Enter document number" />
+                  </div>
+                  <div>
+                    <Label htmlFor="pic">PIC</Label>
+                    <Popover open={picComboOpen} onOpenChange={setPicComboOpen}>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" role="combobox" aria-expanded={picComboOpen} className="w-full justify-between">
+                          {pic || "Select or type PIC name..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Search or type new PIC..." value={pic} onValueChange={setPic} />
+                          <CommandList>
+                            <CommandEmpty>
+                              {pic.trim() && !existingPics.includes(pic.trim()) ? (
+                                <div className="p-2 text-sm">
+                                  <div className="font-medium">Add new: "{pic}"</div>
+                                  {userRole !== 'admin' && userRole !== 'reviewer' && (
+                                    <div className="text-xs text-destructive mt-1">Only Admin and Reviewer can add new PICs</div>
+                                  )}
+                                </div>
+                              ) : ("No PIC found.")}
+                            </CommandEmpty>
+                            <CommandGroup>
+                              {existingPics.map((picName) => (
+                                <CommandItem key={picName} value={picName} onSelect={(currentValue) => { setPic(currentValue); setPicComboOpen(false); }}>
+                                  <Check className={cn("mr-2 h-4 w-4", pic === picName ? "opacity-100" : "opacity-0")} />
+                                  {picName}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div>
+                    <Label>Target Submit (IFR)</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !targetSubmitDate && "text-muted-foreground")}>
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {targetSubmitDate ? format(targetSubmitDate, "PPP") : <span>Pick a date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={targetSubmitDate} onSelect={setTargetSubmitDate} initialFocus className="pointer-events-auto" />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div>
+                    <Label>Target Submit (IFA)</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !targetSubmitDateIFA && "text-muted-foreground")}>
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {targetSubmitDateIFA ? format(targetSubmitDateIFA, "PPP") : <span>Pick a date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={targetSubmitDateIFA} onSelect={setTargetSubmitDateIFA} initialFocus className="pointer-events-auto" />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div>
+                    <Label>Target Submit (IFB)</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !targetSubmitDateIFB && "text-muted-foreground")}>
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {targetSubmitDateIFB ? format(targetSubmitDateIFB, "PPP") : <span>Pick a date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={targetSubmitDateIFB} onSelect={setTargetSubmitDateIFB} initialFocus className="pointer-events-auto" />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <Button onClick={handleAddNew} className="w-full">Add</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+          <Dialog open={recapDialogOpen} onOpenChange={setRecapDialogOpen}>
             <DialogTrigger asChild>
-              <Button><Plus className="h-4 w-4 mr-2" />Add Data</Button>
+              <Button variant="outline"><FileText className="h-4 w-4 mr-2" />Data Recap</Button>
             </DialogTrigger>
-            <DialogContent className="max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Add New Document Tracking Data</DialogTitle>
+                <DialogTitle>Data Recap - {project?.project_name}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-              <div>
-                  <Label htmlFor="fileName">File Name</Label>
-                  <Input id="fileName" value={fileName} onChange={(e) => setFileName(e.target.value)} placeholder="Enter file name" />
+                <div className="flex justify-end no-print">
+                  <Button variant="outline" onClick={() => window.print()}>
+                    <Printer className="h-4 w-4 mr-2" />Print
+                  </Button>
                 </div>
-                <div>
-                  <Label htmlFor="documentNumber">Document Number</Label>
-                  <Input id="documentNumber" value={documentNumber} onChange={(e) => setDocumentNumber(e.target.value)} placeholder="Enter document number" />
+                <div id="recap-content">
+                  <div className="text-center mb-4 hidden print:block">
+                    <h2 className="text-xl font-bold">Data Recap - {project?.project_name}</h2>
+                    <p className="text-sm text-muted-foreground">Generated on {format(new Date(), 'dd MMM yyyy HH:mm')}</p>
+                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12">No</TableHead>
+                        <TableHead>Doc Number</TableHead>
+                        <TableHead>File Name</TableHead>
+                        <TableHead>PIC</TableHead>
+                        <TableHead>Status IFR</TableHead>
+                        <TableHead>Status IFA</TableHead>
+                        <TableHead>Status IFB</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {getRecapData().length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center text-muted-foreground">
+                            No data available
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        getRecapData().map((item, index) => (
+                          <TableRow key={item.file_name}>
+                            <TableCell>{index + 1}</TableCell>
+                            <TableCell>{item.document_number || '-'}</TableCell>
+                            <TableCell>{item.file_name}</TableCell>
+                            <TableCell>{item.pic || '-'}</TableCell>
+                            <TableCell>{item.status_ifr}</TableCell>
+                            <TableCell>{item.status_ifa}</TableCell>
+                            <TableCell>{item.status_ifb}</TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                  <div className="mt-4 text-sm text-muted-foreground">
+                    Total Documents: {getRecapData().length}
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="pic">PIC</Label>
-                  <Popover open={picComboOpen} onOpenChange={setPicComboOpen}>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" role="combobox" aria-expanded={picComboOpen} className="w-full justify-between">
-                        {pic || "Select or type PIC name..."}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full p-0" align="start">
-                      <Command>
-                        <CommandInput placeholder="Search or type new PIC..." value={pic} onValueChange={setPic} />
-                        <CommandList>
-                          <CommandEmpty>
-                            {pic.trim() && !existingPics.includes(pic.trim()) ? (
-                              <div className="p-2 text-sm">
-                                <div className="font-medium">Add new: "{pic}"</div>
-                                {userRole !== 'admin' && userRole !== 'reviewer' && (
-                                  <div className="text-xs text-destructive mt-1">Only Admin and Reviewer can add new PICs</div>
-                                )}
-                              </div>
-                            ) : ("No PIC found.")}
-                          </CommandEmpty>
-                          <CommandGroup>
-                            {existingPics.map((picName) => (
-                              <CommandItem key={picName} value={picName} onSelect={(currentValue) => { setPic(currentValue); setPicComboOpen(false); }}>
-                                <Check className={cn("mr-2 h-4 w-4", pic === picName ? "opacity-100" : "opacity-0")} />
-                                {picName}
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div>
-                  <Label>Target Submit (IFR)</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !targetSubmitDate && "text-muted-foreground")}>
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {targetSubmitDate ? format(targetSubmitDate, "PPP") : <span>Pick a date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={targetSubmitDate} onSelect={setTargetSubmitDate} initialFocus className="pointer-events-auto" />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div>
-                  <Label>Target Submit (IFA)</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !targetSubmitDateIFA && "text-muted-foreground")}>
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {targetSubmitDateIFA ? format(targetSubmitDateIFA, "PPP") : <span>Pick a date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={targetSubmitDateIFA} onSelect={setTargetSubmitDateIFA} initialFocus className="pointer-events-auto" />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div>
-                  <Label>Target Submit (IFB)</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !targetSubmitDateIFB && "text-muted-foreground")}>
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {targetSubmitDateIFB ? format(targetSubmitDateIFB, "PPP") : <span>Pick a date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={targetSubmitDateIFB} onSelect={setTargetSubmitDateIFB} initialFocus className="pointer-events-auto" />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <Button onClick={handleAddNew} className="w-full">Add</Button>
               </div>
             </DialogContent>
           </Dialog>
-        )}
+        </div>
       </div>
 
       <div className="rounded-md border">

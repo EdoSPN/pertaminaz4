@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      chart_datasets: {
+        Row: {
+          chart_type: string | null
+          columns: Json
+          created_at: string | null
+          created_by: string
+          data: Json
+          id: string
+          name: string
+          updated_at: string | null
+          x_axis: string | null
+          y_axis: string | null
+        }
+        Insert: {
+          chart_type?: string | null
+          columns?: Json
+          created_at?: string | null
+          created_by: string
+          data?: Json
+          id?: string
+          name: string
+          updated_at?: string | null
+          x_axis?: string | null
+          y_axis?: string | null
+        }
+        Update: {
+          chart_type?: string | null
+          columns?: Json
+          created_at?: string | null
+          created_by?: string
+          data?: Json
+          id?: string
+          name?: string
+          updated_at?: string | null
+          x_axis?: string | null
+          y_axis?: string | null
+        }
+        Relationships: []
+      }
       file_comments: {
         Row: {
           comment: string

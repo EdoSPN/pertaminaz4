@@ -73,7 +73,8 @@ const PowerBI = () => {
       dynamicTyping: true,
       skipEmptyLines: true,
       complete: (results) => {
-        const cols = results.meta.fields || [];
+        // Filter out empty column names to prevent Select.Item errors
+        const cols = (results.meta.fields || []).filter(col => col && col.trim() !== '');
         const data = results.data as Record<string, any>[];
         
         setColumns(cols);
@@ -255,7 +256,7 @@ const PowerBI = () => {
                 <SelectValue placeholder="Load saved dataset" />
               </SelectTrigger>
               <SelectContent>
-                {datasets.map((dataset) => (
+                {datasets.filter(d => d.id && d.id.trim() !== '').map((dataset) => (
                   <SelectItem key={dataset.id} value={dataset.id}>
                     {dataset.name}
                   </SelectItem>
@@ -304,7 +305,7 @@ const PowerBI = () => {
                     <SelectValue placeholder="Select column" />
                   </SelectTrigger>
                   <SelectContent>
-                    {columns.map((col) => (
+                    {columns.filter(col => col && col.trim() !== '').map((col) => (
                       <SelectItem key={col} value={col}>
                         {col}
                       </SelectItem>
@@ -320,7 +321,7 @@ const PowerBI = () => {
                     <SelectValue placeholder="Select column" />
                   </SelectTrigger>
                   <SelectContent>
-                    {columns.map((col) => (
+                    {columns.filter(col => col && col.trim() !== '').map((col) => (
                       <SelectItem key={col} value={col}>
                         {col}
                       </SelectItem>

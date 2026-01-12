@@ -16,6 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { validateMonitoringData } from '@/lib/validation';
 
 interface MonitoringData {
   id: string;
@@ -213,6 +214,19 @@ export default function OkRtProjectDetail() {
 
   const handleSaveReviewerEdit = async () => {
     if (!currentEditItem) return;
+    
+    // Validate input data
+    const validation = validateMonitoringData({
+      file_name: editFileName,
+      pic: editPic.trim() || null,
+      document_number: editDocumentNumber.trim() || null,
+    });
+
+    if (!validation.success) {
+      toast.error(validation.error);
+      return;
+    }
+
     if (editPic.trim() && !existingPics.includes(editPic.trim())) {
       if (userRole !== 'admin' && userRole !== 'reviewer') {
         toast.error('Only Admin and Reviewer can add new PIC names');
@@ -221,9 +235,9 @@ export default function OkRtProjectDetail() {
     }
     const originalFileName = currentEditItem.file_name;
     const commonUpdates = {
-      file_name: editFileName,
-      pic: editPic.trim() || null,
-      document_number: editDocumentNumber.trim() || null,
+      file_name: validation.data.file_name,
+      pic: validation.data.pic,
+      document_number: validation.data.document_number,
     };
     const { error } = await supabase
       .from('okrt_monitoring_data')
@@ -242,7 +256,7 @@ export default function OkRtProjectDetail() {
       const { error: categoryError } = await supabase
         .from('okrt_monitoring_data')
         .update(categoryUpdate)
-        .eq('file_name', editFileName)
+        .eq('file_name', validation.data.file_name)
         .eq('status_category', currentEditItem.status_category)
         .eq('project_id', projectId);
       if (categoryError) {
@@ -263,11 +277,23 @@ export default function OkRtProjectDetail() {
 
   const handleSaveApproval = async () => {
     if (!currentEditItem) return;
+    
+    // Validate approval comment
+    const validation = validateMonitoringData({
+      file_name: currentEditItem.file_name,
+      approval_comment: approvalComment.trim() || null,
+    });
+
+    if (!validation.success) {
+      toast.error(validation.error);
+      return;
+    }
+
     const { error } = await supabase
       .from('okrt_monitoring_data')
       .update({
         approval_status: approvalStatus,
-        approval_comment: approvalComment.trim() || null,
+        approval_comment: validation.data.approval_comment,
       })
       .eq('id', currentEditItem.id);
     if (error) {
@@ -295,11 +321,20 @@ export default function OkRtProjectDetail() {
   };
 
   const handleAddNew = async () => {
-    if (!fileName.trim()) {
-      toast.error('File name is required');
+    if (!projectId) return;
+    
+    // Validate input data
+    const validation = validateMonitoringData({
+      file_name: fileName,
+      pic: pic.trim() || null,
+      document_number: documentNumber.trim() || null,
+    });
+
+    if (!validation.success) {
+      toast.error(validation.error);
       return;
     }
-    if (!projectId) return;
+
     if (pic.trim() && !existingPics.includes(pic.trim())) {
       if (userRole !== 'admin' && userRole !== 'reviewer') {
         toast.error('Only Admin and Reviewer can add new PIC names');
@@ -311,9 +346,9 @@ export default function OkRtProjectDetail() {
       .insert([
         {
           project_id: projectId,
-          file_name: fileName,
-          document_number: documentNumber.trim() || null,
-          pic: pic.trim() || null,
+          file_name: validation.data.file_name,
+          document_number: validation.data.document_number,
+          pic: validation.data.pic,
           status_category: 'IFR',
           target_submit_ifr: targetSubmitDate ? targetSubmitDate.toISOString() : null,
           target_submit_ifa: targetSubmitDateIFA ? targetSubmitDateIFA.toISOString() : null,
@@ -321,9 +356,9 @@ export default function OkRtProjectDetail() {
         },
         {
           project_id: projectId,
-          file_name: fileName,
-          document_number: documentNumber.trim() || null,
-          pic: pic.trim() || null,
+          file_name: validation.data.file_name,
+          document_number: validation.data.document_number,
+          pic: validation.data.pic,
           status_category: 'IFA',
           target_submit_ifr: targetSubmitDate ? targetSubmitDate.toISOString() : null,
           target_submit_ifa: targetSubmitDateIFA ? targetSubmitDateIFA.toISOString() : null,
@@ -331,9 +366,9 @@ export default function OkRtProjectDetail() {
         },
         {
           project_id: projectId,
-          file_name: fileName,
-          document_number: documentNumber.trim() || null,
-          pic: pic.trim() || null,
+          file_name: validation.data.file_name,
+          document_number: validation.data.document_number,
+          pic: validation.data.pic,
           status_category: 'IFB',
           target_submit_ifr: targetSubmitDate ? targetSubmitDate.toISOString() : null,
           target_submit_ifa: targetSubmitDateIFA ? targetSubmitDateIFA.toISOString() : null,

@@ -15,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { validateMonitoringData } from '@/lib/validation';
 interface MonitoringData {
   id: string;
   file_name: string;
@@ -205,6 +206,17 @@ export default function Monitoring() {
   const handleSaveReviewerEdit = async () => {
     if (!currentEditItem) return;
 
+    // Validate input data
+    const validation = validateMonitoringData({
+      file_name: editFileName,
+      pic: editPic.trim() || null,
+    });
+
+    if (!validation.success) {
+      toast.error(validation.error);
+      return;
+    }
+
     // Check if PIC is new and user has permission
     if (editPic.trim() && !existingPics.includes(editPic.trim())) {
       if (userRole !== 'admin' && userRole !== 'reviewer') {
@@ -218,8 +230,8 @@ export default function Monitoring() {
 
     // Update all rows with the same file_name to keep them grouped
     const commonUpdates = {
-      file_name: editFileName,
-      pic: editPic.trim() || null,
+      file_name: validation.data.file_name,
+      pic: validation.data.pic,
     };
 
     const { error } = await supabase
@@ -242,7 +254,7 @@ export default function Monitoring() {
       const { error: categoryError } = await supabase
         .from('monitoring_data')
         .update(categoryUpdate)
-        .eq('file_name', editFileName)
+        .eq('file_name', validation.data.file_name)
         .eq('status_category', currentEditItem.status_category);
 
       if (categoryError) {
@@ -265,11 +277,22 @@ export default function Monitoring() {
   const handleSaveApproval = async () => {
     if (!currentEditItem) return;
 
+    // Validate approval comment
+    const validation = validateMonitoringData({
+      file_name: currentEditItem.file_name,
+      approval_comment: approvalComment.trim() || null,
+    });
+
+    if (!validation.success) {
+      toast.error(validation.error);
+      return;
+    }
+
     const { error } = await supabase
       .from('monitoring_data')
       .update({
         approval_status: approvalStatus,
-        approval_comment: approvalComment.trim() || null,
+        approval_comment: validation.data.approval_comment,
       })
       .eq('id', currentEditItem.id);
 
@@ -297,8 +320,14 @@ export default function Monitoring() {
     }
   };
   const handleAddNew = async () => {
-    if (!fileName.trim()) {
-      toast.error('File name is required');
+    // Validate input data
+    const validation = validateMonitoringData({
+      file_name: fileName,
+      pic: pic.trim() || null,
+    });
+
+    if (!validation.success) {
+      toast.error(validation.error);
       return;
     }
 
@@ -315,24 +344,24 @@ export default function Monitoring() {
       .from('monitoring_data')
       .insert([
         {
-          file_name: fileName,
-          pic: pic.trim() || null,
+          file_name: validation.data.file_name,
+          pic: validation.data.pic,
           status_category: 'IFR',
           target_submit_ifr: targetSubmitDate ? targetSubmitDate.toISOString() : null,
           target_submit_ifa: targetSubmitDateIFA ? targetSubmitDateIFA.toISOString() : null,
           target_submit_ifb: targetSubmitDateIFB ? targetSubmitDateIFB.toISOString() : null,
         },
         {
-          file_name: fileName,
-          pic: pic.trim() || null,
+          file_name: validation.data.file_name,
+          pic: validation.data.pic,
           status_category: 'IFA',
           target_submit_ifr: targetSubmitDate ? targetSubmitDate.toISOString() : null,
           target_submit_ifa: targetSubmitDateIFA ? targetSubmitDateIFA.toISOString() : null,
           target_submit_ifb: targetSubmitDateIFB ? targetSubmitDateIFB.toISOString() : null,
         },
         {
-          file_name: fileName,
-          pic: pic.trim() || null,
+          file_name: validation.data.file_name,
+          pic: validation.data.pic,
           status_category: 'IFB',
           target_submit_ifr: targetSubmitDate ? targetSubmitDate.toISOString() : null,
           target_submit_ifa: targetSubmitDateIFA ? targetSubmitDateIFA.toISOString() : null,

@@ -53,38 +53,35 @@ export const projectDataSchema = z.object({
   status: z.enum(['Active', 'On Hold', 'Completed', 'Cancelled']).default('Active'),
 });
 
+// Validation result type for proper type narrowing
+export type ValidationResult<T> = 
+  | { success: true; data: T; error?: never }
+  | { success: false; error: string; data?: never };
+
 // Helper function to validate and return errors in a user-friendly format
 export function validateMonitoringData(data: {
   file_name?: string;
   pic?: string | null;
   document_number?: string | null;
   approval_comment?: string | null;
-}): { success: true; data: z.infer<typeof monitoringDataSchema> } | { success: false; error: string } {
-  try {
-    const validated = monitoringDataSchema.parse(data);
-    return { success: true, data: validated };
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      const firstError = error.errors[0];
-      return { success: false, error: firstError.message };
-    }
-    return { success: false, error: 'Validation failed' };
+}): ValidationResult<z.infer<typeof monitoringDataSchema>> {
+  const result = monitoringDataSchema.safeParse(data);
+  if (result.success) {
+    return { success: true, data: result.data };
   }
+  const firstError = result.error.errors[0];
+  return { success: false, error: firstError?.message || 'Validation failed' };
 }
 
 export function validateProjectData(data: {
   project_name?: string;
   description?: string | null;
   status?: string;
-}): { success: true; data: z.infer<typeof projectDataSchema> } | { success: false; error: string } {
-  try {
-    const validated = projectDataSchema.parse(data);
-    return { success: true, data: validated };
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      const firstError = error.errors[0];
-      return { success: false, error: firstError.message };
-    }
-    return { success: false, error: 'Validation failed' };
+}): ValidationResult<z.infer<typeof projectDataSchema>> {
+  const result = projectDataSchema.safeParse(data);
+  if (result.success) {
+    return { success: true, data: result.data };
   }
+  const firstError = result.error.errors[0];
+  return { success: false, error: firstError?.message || 'Validation failed' };
 }

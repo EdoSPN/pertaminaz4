@@ -20,6 +20,61 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 
+// File upload validation constants
+const ALLOWED_FILE_TYPES = [
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+  'text/csv',
+  'image/jpeg',
+  'image/png',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+];
+
+const VALID_EXTENSIONS: Record<string, string[]> = {
+  'application/pdf': ['pdf'],
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['xlsx'],
+  'application/vnd.ms-excel': ['xls'],
+  'text/csv': ['csv'],
+  'image/jpeg': ['jpg', 'jpeg'],
+  'image/png': ['png'],
+  'application/msword': ['doc'],
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['docx'],
+};
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_SUBJECT_LENGTH = 255;
+
+const validateFile = (file: File): { valid: boolean; error?: string } => {
+  // Validate file type
+  if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+    return {
+      valid: false,
+      error: 'File type not allowed. Please upload PDF, Excel, CSV, Word documents, or images only.',
+    };
+  }
+
+  // Validate file size
+  if (file.size > MAX_FILE_SIZE) {
+    return {
+      valid: false,
+      error: 'File size exceeds 10MB limit.',
+    };
+  }
+
+  // Validate file extension matches MIME type
+  const fileExt = file.name.split('.').pop()?.toLowerCase();
+  if (!fileExt || !VALID_EXTENSIONS[file.type]?.includes(fileExt)) {
+    return {
+      valid: false,
+      error: 'File extension does not match file type. This may indicate a renamed file.',
+    };
+  }
+
+  return { valid: true };
+};
+
 const Repository = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -93,10 +148,24 @@ const Repository = () => {
       return;
     }
 
+    // Validate file type, size, and extension
+    const validation = validateFile(fileToUpload);
+    if (!validation.valid) {
+      toast({
+        title: 'Error',
+        description: validation.error,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Sanitize subject (trim and limit length)
+    const sanitizedSubject = fileSubject.trim().slice(0, MAX_SUBJECT_LENGTH);
+
     setUploading(true);
     try {
       // Upload file to storage
-      const fileExt = fileToUpload.name.split('.').pop();
+      const fileExt = fileToUpload.name.split('.').pop()?.toLowerCase();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
       
       const { error: uploadError } = await supabase.storage
@@ -107,7 +176,7 @@ const Repository = () => {
 
       // Insert file record to database
       const { error } = await supabase.from('files').insert({
-        file_name: fileSubject,
+        file_name: sanitizedSubject,
         file_path: fileName,
         file_type: fileToUpload.type,
         uploaded_by: user.id,
@@ -177,6 +246,17 @@ const Repository = () => {
       return;
     }
 
+    // Validate file type, size, and extension
+    const validation = validateFile(fileToReplace);
+    if (!validation.valid) {
+      toast({
+        title: 'Error',
+        description: validation.error,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setUploading(true);
     try {
       // Find the old file to delete it from storage
@@ -188,7 +268,7 @@ const Repository = () => {
       }
 
       // Upload new file to storage
-      const fileExt = fileToReplace.name.split('.').pop();
+      const fileExt = fileToReplace.name.split('.').pop()?.toLowerCase();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
       
       const { error: uploadError } = await supabase.storage
@@ -436,6 +516,7 @@ const Repository = () => {
                     placeholder="Enter file subject/name"
                     value={fileSubject}
                     onChange={(e) => setFileSubject(e.target.value)}
+                    maxLength={MAX_SUBJECT_LENGTH}
                   />
                 </div>
                 <div>
@@ -443,8 +524,12 @@ const Repository = () => {
                   <Input
                     id="file"
                     type="file"
+                    accept=".pdf,.xlsx,.xls,.csv,.jpg,.jpeg,.png,.doc,.docx"
                     onChange={(e) => setFileToUpload(e.target.files?.[0] || null)}
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Allowed: PDF, Excel, CSV, Word, Images (max 10MB)
+                  </p>
                 </div>
               </div>
               <DialogFooter>

@@ -51,15 +51,10 @@ const documentTrackingItems: AreaItem[] = [
       { title: 'Ramba', url: '/monitoring/ramba' }
     ].sort((a, b) => a.title.localeCompare(b.title))
   },
-  { 
-    title: 'Area 2', 
-    items: [
-      { title: 'Limau', url: '/limau' },
-      { title: 'OK - RT', url: '/ok-rt' },
-      { title: 'Prabumulih', url: '/prabumulih' }
-    ].sort((a, b) => a.title.localeCompare(b.title))
-  }
-].sort((a, b) => a.title.localeCompare(b.title));
+];
+
+// Area 2 is now a direct link, not a nested menu
+const area2Link = { title: 'Area 2', url: '/area2/document-tracking' };
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -67,7 +62,7 @@ export function AppSidebar() {
   const { signOut, user } = useAuth();
   const [userRole, setUserRole] = useState<string>('');
   const [openDocTracking, setOpenDocTracking] = useState(true);
-  const [openAreas, setOpenAreas] = useState<Record<string, boolean>>({ 'Area 1': true, 'Area 2': true });
+  const [openAreas, setOpenAreas] = useState<Record<string, boolean>>({ 'Area 1': true });
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -149,6 +144,14 @@ export function AppSidebar() {
                               </CollapsibleContent>
                             </Collapsible>
                           ))}
+                          {/* Area 2 as direct link */}
+                          <SidebarMenuSubItem>
+                            <SidebarMenuSubButton asChild isActive={isActive(area2Link.url)}>
+                              <NavLink to={area2Link.url}>
+                                {area2Link.title}
+                              </NavLink>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
                         </SidebarMenuSub>
                       </CollapsibleContent>
                     </SidebarMenuItem>

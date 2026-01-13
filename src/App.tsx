@@ -16,12 +16,7 @@ import Dashboard from "./pages/Dashboard";
 import PowerBI from "./pages/PowerBI";
 import Calculator from "./pages/Calculator";
 import Repository from "./pages/Repository";
-import Prabumulih from "./pages/Prabumulih";
-import PrabumulihProjectDetail from "./pages/PrabumulihProjectDetail";
-import Limau from "./pages/Limau";
-import LimauProjectDetail from "./pages/LimauProjectDetail";
-import OkRt from "./pages/OkRt";
-import OkRtProjectDetail from "./pages/OkRtProjectDetail";
+import Area2DocumentTracking from "./pages/Area2DocumentTracking";
 import UserManagement from "./pages/UserManagement";
 import NotFound from "./pages/NotFound";
 
@@ -52,12 +47,18 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            {/* Backward-compatible redirects (old /monitoring URLs) */}
-            <Route path="/monitoring/ok-rt" element={<Navigate to="/ok-rt" replace />} />
-            <Route path="/monitoring/limau" element={<Navigate to="/limau" replace />} />
-            <Route path="/monitoring/prabumulih" element={<Navigate to="/prabumulih" replace />} />
+            {/* Backward-compatible redirects */}
+            <Route path="/monitoring/ok-rt" element={<Navigate to="/area2/document-tracking" replace />} />
+            <Route path="/monitoring/limau" element={<Navigate to="/area2/document-tracking" replace />} />
+            <Route path="/monitoring/prabumulih" element={<Navigate to="/area2/document-tracking" replace />} />
             <Route path="/monitoring" element={<Navigate to="/dashboard" replace />} />
             <Route path="/monitoring/*" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/prabumulih" element={<Navigate to="/area2/document-tracking" replace />} />
+            <Route path="/prabumulih/*" element={<Navigate to="/area2/document-tracking" replace />} />
+            <Route path="/limau" element={<Navigate to="/area2/document-tracking" replace />} />
+            <Route path="/limau/*" element={<Navigate to="/area2/document-tracking" replace />} />
+            <Route path="/ok-rt" element={<Navigate to="/area2/document-tracking" replace />} />
+            <Route path="/ok-rt/*" element={<Navigate to="/area2/document-tracking" replace />} />
 
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
@@ -105,61 +106,11 @@ const App = () => (
               }
             />
             <Route
-              path="/prabumulih"
+              path="/area2/document-tracking"
               element={
                 <ProtectedRoute>
                   <AppLayout>
-                    <Prabumulih />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/prabumulih/:projectId"
-              element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <PrabumulihProjectDetail />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/limau"
-              element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <Limau />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/limau/:projectId"
-              element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <LimauProjectDetail />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/ok-rt"
-              element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <OkRt />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/ok-rt/:projectId"
-              element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <OkRtProjectDetail />
+                    <Area2DocumentTracking />
                   </AppLayout>
                 </ProtectedRoute>
               }

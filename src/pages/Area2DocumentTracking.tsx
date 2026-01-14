@@ -19,9 +19,12 @@ import { validateMonitoringData } from '@/lib/validation';
 
 const PROJECT_ID = '32ab11e0-59df-4e56-9586-a51315672be4';
 
+type FieldType = 'Limau' | 'OK - RT' | 'Prabumulih';
+
 interface MonitoringData {
   id: string;
   project_id: string;
+  field: FieldType;
   file_name: string;
   document_number: string | null;
   status_category: 'IFR' | 'IFA' | 'IFB';
@@ -75,6 +78,8 @@ export default function Area2DocumentTracking() {
   const [documentNumber, setDocumentNumber] = useState('');
   const [editDocumentNumber, setEditDocumentNumber] = useState('');
   const [recapDialogOpen, setRecapDialogOpen] = useState(false);
+  const [field, setField] = useState<FieldType>('Prabumulih');
+  const [editField, setEditField] = useState<FieldType>('Prabumulih');
 
   useEffect(() => {
     fetchProject();
@@ -129,7 +134,11 @@ export default function Area2DocumentTracking() {
     if (error) {
       toast.error('Failed to fetch monitoring data');
     } else {
-      setMonitoringData(data || []);
+      const mappedData = (data || []).map(item => ({
+        ...item,
+        field: (item.field || 'Prabumulih') as FieldType,
+      }));
+      setMonitoringData(mappedData);
     }
     setLoading(false);
   };
@@ -162,6 +171,7 @@ export default function Area2DocumentTracking() {
     setEditFileName(item.file_name);
     setEditPic(item.pic || '');
     setEditDocumentNumber(item.document_number || '');
+    setEditField(item.field || 'Prabumulih');
     const targetDate = item.status_category === 'IFR' 
       ? item.target_submit_ifr 
       : item.status_category === 'IFA' 
@@ -230,6 +240,7 @@ export default function Area2DocumentTracking() {
       file_name: validation.data.file_name,
       pic: validation.data.pic,
       document_number: validation.data.document_number,
+      field: editField,
     };
     const { error } = await supabase
       .from('prabumulih_monitoring_data')
@@ -334,6 +345,7 @@ export default function Area2DocumentTracking() {
       .insert([
         {
           project_id: PROJECT_ID,
+          field: field,
           file_name: validation.data.file_name,
           document_number: validation.data.document_number,
           pic: validation.data.pic,
@@ -344,6 +356,7 @@ export default function Area2DocumentTracking() {
         },
         {
           project_id: PROJECT_ID,
+          field: field,
           file_name: validation.data.file_name,
           document_number: validation.data.document_number,
           pic: validation.data.pic,
@@ -354,6 +367,7 @@ export default function Area2DocumentTracking() {
         },
         {
           project_id: PROJECT_ID,
+          field: field,
           file_name: validation.data.file_name,
           document_number: validation.data.document_number,
           pic: validation.data.pic,
@@ -371,6 +385,7 @@ export default function Area2DocumentTracking() {
       setPic('');
       setFileName('');
       setDocumentNumber('');
+      setField('Prabumulih');
       setTargetSubmitDate(undefined);
       setTargetSubmitDateIFA(undefined);
       setTargetSubmitDateIFB(undefined);
@@ -399,6 +414,7 @@ export default function Area2DocumentTracking() {
     const recapGroups = monitoringData.reduce((acc, item) => {
       if (!acc[item.file_name]) {
         acc[item.file_name] = {
+          field: item.field || 'Prabumulih',
           document_number: item.document_number,
           file_name: item.file_name,
           pic: item.pic,
@@ -417,7 +433,7 @@ export default function Area2DocumentTracking() {
         acc[item.file_name].status_ifb = item.status_description_ifb || 'Not Yet';
       }
       return acc;
-    }, {} as Record<string, { document_number: string | null; file_name: string; pic: string | null; status_ifr: string; status_ifa: string; status_ifb: string }>);
+    }, {} as Record<string, { field: string; document_number: string | null; file_name: string; pic: string | null; status_ifr: string; status_ifa: string; status_ifb: string }>);
 
     return Object.values(recapGroups).sort((a, b) => {
       const picA = (a.pic || '').toLowerCase();
@@ -432,6 +448,7 @@ export default function Area2DocumentTracking() {
     if (!picMatch) return acc;
     if (!acc[item.file_name]) {
       acc[item.file_name] = {
+        field: item.field || 'Prabumulih',
         file_name: item.file_name,
         document_number: item.document_number,
         pic: item.pic,
@@ -445,7 +462,7 @@ export default function Area2DocumentTracking() {
     if (item.status_category === 'IFA') acc[item.file_name].ifa = item;
     if (item.status_category === 'IFB') acc[item.file_name].ifb = item;
     return acc;
-  }, {} as Record<string, { file_name: string; document_number: string | null; pic: string | null; id: string; ifr: MonitoringData | null; ifa: MonitoringData | null; ifb: MonitoringData | null }>);
+  }, {} as Record<string, { field: string; file_name: string; document_number: string | null; pic: string | null; id: string; ifr: MonitoringData | null; ifa: MonitoringData | null; ifb: MonitoringData | null }>);
 
   const sortedGroupedData = Object.values(groupedData).sort((a, b) => {
     const picA = (a.pic || '').toLowerCase();
@@ -479,7 +496,7 @@ export default function Area2DocumentTracking() {
     }
   };
 
-  const renderDataRows = (item: MonitoringData, group: { file_name: string; document_number: string | null; pic: string | null; ifr: MonitoringData | null; ifa: MonitoringData | null; ifb: MonitoringData | null }) => {
+  const renderDataRows = (item: MonitoringData, group: { field: string; file_name: string; document_number: string | null; pic: string | null; ifr: MonitoringData | null; ifa: MonitoringData | null; ifb: MonitoringData | null }) => {
     const statusDesc = item.status_category === 'IFR' 
       ? item.status_description_ifr 
       : item.status_category === 'IFA' 
@@ -499,6 +516,7 @@ export default function Area2DocumentTracking() {
 
     return (
       <TableRow key={item.id}>
+        <TableCell>{group.field || 'Prabumulih'}</TableCell>
         <TableCell>{group.document_number || '-'}</TableCell>
         <TableCell>{group.file_name}</TableCell>
         <TableCell>{item.status_category}</TableCell>
@@ -583,6 +601,7 @@ export default function Area2DocumentTracking() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>No</TableHead>
+                      <TableHead>Field</TableHead>
                       <TableHead>Doc Number</TableHead>
                       <TableHead>File Name</TableHead>
                       <TableHead>PIC</TableHead>
@@ -595,6 +614,7 @@ export default function Area2DocumentTracking() {
                     {getRecapData().map((item, index) => (
                       <TableRow key={item.file_name}>
                         <TableCell>{index + 1}</TableCell>
+                        <TableCell>{item.field || 'Prabumulih'}</TableCell>
                         <TableCell>{item.document_number || '-'}</TableCell>
                         <TableCell>{item.file_name}</TableCell>
                         <TableCell>{item.pic || '-'}</TableCell>
@@ -633,6 +653,19 @@ export default function Area2DocumentTracking() {
                   <DialogTitle>Add Monitoring Data</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="field">Field</Label>
+                    <Select value={field} onValueChange={(value: FieldType) => setField(value)}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select field" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Limau">Limau</SelectItem>
+                        <SelectItem value="OK - RT">OK - RT</SelectItem>
+                        <SelectItem value="Prabumulih">Prabumulih</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div>
                     <Label htmlFor="fileName">File Name</Label>
                     <Input
@@ -824,6 +857,7 @@ export default function Area2DocumentTracking() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Field</TableHead>
                 <TableHead>Doc Number</TableHead>
                 <TableHead>File Name</TableHead>
                 <TableHead>Category</TableHead>
@@ -895,6 +929,19 @@ export default function Area2DocumentTracking() {
             <DialogTitle>Edit File Information</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            <div>
+              <Label>Field</Label>
+              <Select value={editField} onValueChange={(value: FieldType) => setEditField(value)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Limau">Limau</SelectItem>
+                  <SelectItem value="OK - RT">OK - RT</SelectItem>
+                  <SelectItem value="Prabumulih">Prabumulih</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div>
               <Label>File Name</Label>
               <Input

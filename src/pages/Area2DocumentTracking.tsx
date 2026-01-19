@@ -15,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 import { validateMonitoringData } from '@/lib/validation';
 
 const PROJECT_ID = '32ab11e0-59df-4e56-9586-a51315672be4';
@@ -80,6 +81,30 @@ export default function Area2DocumentTracking() {
   const [recapDialogOpen, setRecapDialogOpen] = useState(false);
   const [field, setField] = useState<FieldType>('Prabumulih');
   const [editField, setEditField] = useState<FieldType>('Prabumulih');
+  const [fieldFilter, setFieldFilter] = useState<string[]>(['all']);
+  const [fieldFilterOpen, setFieldFilterOpen] = useState(false);
+
+  const handleFieldFilterChange = (value: string, checked: boolean | 'indeterminate') => {
+    if (value === 'all') {
+      setFieldFilter(checked ? ['all'] : []);
+    } else {
+      setFieldFilter(prev => {
+        let newFilter = prev.filter(f => f !== 'all');
+        if (checked) {
+          newFilter = [...newFilter, value];
+        } else {
+          newFilter = newFilter.filter(f => f !== value);
+        }
+        if (newFilter.length === 3) {
+          return ['all'];
+        }
+        if (newFilter.length === 0) {
+          return ['all'];
+        }
+        return newFilter;
+      });
+    }
+  };
 
   useEffect(() => {
     fetchProject();
@@ -444,6 +469,8 @@ export default function Area2DocumentTracking() {
   };
 
   const groupedData = monitoringData.reduce((acc, item) => {
+    const fieldMatch = fieldFilter.includes('all') || fieldFilter.includes(item.field);
+    if (!fieldMatch) return acc;
     const picMatch = picFilter === 'all' || item.pic === picFilter;
     if (!picMatch) return acc;
     if (!acc[item.file_name]) {
@@ -496,7 +523,7 @@ export default function Area2DocumentTracking() {
     }
   };
 
-  const renderDataRows = (item: MonitoringData, group: { field: string; file_name: string; document_number: string | null; pic: string | null; ifr: MonitoringData | null; ifa: MonitoringData | null; ifb: MonitoringData | null }) => {
+  const renderDataRows = (item: MonitoringData, group: { field: string; file_name: string; document_number: string | null; pic: string | null; ifr: MonitoringData | null; ifa: MonitoringData | null; ifb: MonitoringData | null }, bgClass: string) => {
     const statusDesc = item.status_category === 'IFR' 
       ? item.status_description_ifr 
       : item.status_category === 'IFA' 
@@ -515,7 +542,7 @@ export default function Area2DocumentTracking() {
     const explanation = getSubmitExplanation(targetDate, actualDate);
 
     return (
-      <TableRow key={item.id}>
+      <TableRow key={item.id} className={bgClass}>
         <TableCell>{group.field || 'Prabumulih'}</TableCell>
         <TableCell>{group.document_number || '-'}</TableCell>
         <TableCell>{group.file_name}</TableCell>
@@ -819,6 +846,43 @@ export default function Area2DocumentTracking() {
 
       <div className="flex flex-wrap gap-4">
         <div className="w-full sm:w-auto">
+          <Label>Filter by Field</Label>
+          <Popover open={fieldFilterOpen} onOpenChange={setFieldFilterOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-full sm:w-[200px] justify-between">
+                {fieldFilter.includes('all') 
+                  ? 'All Fields' 
+                  : fieldFilter.length === 1 
+                    ? fieldFilter[0] 
+                    : `${fieldFilter.length} selected`}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[200px] p-2">
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="field-all"
+                    checked={fieldFilter.includes('all')} 
+                    onCheckedChange={(checked) => handleFieldFilterChange('all', checked)} 
+                  />
+                  <label htmlFor="field-all" className="text-sm cursor-pointer">All</label>
+                </div>
+                {['Limau', 'OK - RT', 'Prabumulih'].map((f) => (
+                  <div key={f} className="flex items-center space-x-2">
+                    <Checkbox 
+                      id={`field-${f}`}
+                      checked={fieldFilter.includes(f) || fieldFilter.includes('all')} 
+                      onCheckedChange={(checked) => handleFieldFilterChange(f, checked)} 
+                    />
+                    <label htmlFor={`field-${f}`} className="text-sm cursor-pointer">{f}</label>
+                  </div>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+        <div className="w-full sm:w-auto">
           <Label>Filter by Status Category</Label>
           <Select value={statusCategoryFilter} onValueChange={(value: 'ALL' | 'IFR' | 'IFA' | 'IFB') => setStatusCategoryFilter(value)}>
             <SelectTrigger className="w-full sm:w-[180px]">
@@ -871,7 +935,7 @@ export default function Area2DocumentTracking() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedGroupedData.map((group) => {
+              {sortedGroupedData.map((group, groupIndex) => {
                 const items: MonitoringData[] = [];
                 if (statusCategoryFilter === 'ALL' || statusCategoryFilter === 'IFR') {
                   if (group.ifr) items.push(group.ifr);
@@ -882,7 +946,8 @@ export default function Area2DocumentTracking() {
                 if (statusCategoryFilter === 'ALL' || statusCategoryFilter === 'IFB') {
                   if (group.ifb) items.push(group.ifb);
                 }
-                return items.map((item) => renderDataRows(item, group));
+                const groupBgClass = groupIndex % 2 === 0 ? 'bg-white' : 'bg-slate-50';
+                return items.map((item) => renderDataRows(item, group, groupBgClass));
               })}
             </TableBody>
           </Table>

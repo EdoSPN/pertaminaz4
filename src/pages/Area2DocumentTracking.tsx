@@ -858,7 +858,7 @@ export default function Area2DocumentTracking() {
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[200px] p-2">
+            <PopoverContent className="w-[200px] p-2 z-50 bg-white border shadow-md">
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
                   <Checkbox 

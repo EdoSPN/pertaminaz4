@@ -53,6 +53,98 @@ export type Database = {
         }
         Relationships: []
       }
+      document_file_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          document_file_id: string | null
+          id: string
+          monitoring_data_id: string
+          status_category: string
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          document_file_id?: string | null
+          id?: string
+          monitoring_data_id: string
+          status_category: string
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          document_file_id?: string | null
+          id?: string
+          monitoring_data_id?: string
+          status_category?: string
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_file_logs_document_file_id_fkey"
+            columns: ["document_file_id"]
+            isOneToOne: false
+            referencedRelation: "document_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_file_logs_monitoring_data_id_fkey"
+            columns: ["monitoring_data_id"]
+            isOneToOne: false
+            referencedRelation: "prabumulih_monitoring_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_files: {
+        Row: {
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string | null
+          id: string
+          monitoring_data_id: string
+          status_category: string
+          uploaded_at: string | null
+          uploaded_by: string
+        }
+        Insert: {
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          monitoring_data_id: string
+          status_category: string
+          uploaded_at?: string | null
+          uploaded_by: string
+        }
+        Update: {
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          monitoring_data_id?: string
+          status_category?: string
+          uploaded_at?: string | null
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_files_monitoring_data_id_fkey"
+            columns: ["monitoring_data_id"]
+            isOneToOne: false
+            referencedRelation: "prabumulih_monitoring_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       file_comments: {
         Row: {
           comment: string

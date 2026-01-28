@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Pencil, CalendarIcon, Check, ChevronsUpDown, Trash2, FileText, Printer } from 'lucide-react';
+import { Plus, Pencil, CalendarIcon, Check, ChevronsUpDown, Trash2, FileText, Printer, FolderOpen } from 'lucide-react';
+import { DocumentFilesDialog } from '@/components/DocumentFilesDialog';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
@@ -83,6 +84,13 @@ export default function Area2DocumentTracking() {
   const [editField, setEditField] = useState<FieldType>('Prabumulih');
   const [fieldFilter, setFieldFilter] = useState<string[]>(['all']);
   const [fieldFilterOpen, setFieldFilterOpen] = useState(false);
+  const [fileDialogOpen, setFileDialogOpen] = useState(false);
+  const [fileDialogItem, setFileDialogItem] = useState<MonitoringData | null>(null);
+
+  const openFileDialog = (item: MonitoringData) => {
+    setFileDialogItem(item);
+    setFileDialogOpen(true);
+  };
 
   const handleFieldFilterChange = (value: string, checked: boolean | 'indeterminate') => {
     if (value === 'all') {
@@ -563,6 +571,9 @@ export default function Area2DocumentTracking() {
         </TableCell>
         <TableCell>
           <div className="flex gap-1 flex-wrap">
+            <Button variant="ghost" size="sm" onClick={() => openFileDialog(item)} title="Download/Upload Files">
+              <FolderOpen className="h-4 w-4" />
+            </Button>
             {canEditStatus && (
               <Button variant="ghost" size="sm" onClick={() => handleOpenEditDialog(item)}>
                 <Pencil className="h-4 w-4" />
@@ -1133,6 +1144,15 @@ export default function Area2DocumentTracking() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Document Files Dialog */}
+      <DocumentFilesDialog
+        open={fileDialogOpen}
+        onOpenChange={setFileDialogOpen}
+        item={fileDialogItem}
+        userId={user?.id || ''}
+        userEmail={user?.email || ''}
+      />
     </div>
   );
 }

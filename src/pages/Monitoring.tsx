@@ -30,7 +30,7 @@ interface MonitoringData {
   actual_submit_ifr: string | null;
   actual_submit_ifa: string | null;
   actual_submit_ifb: string | null;
-  approval_status: 'Approved' | 'Denied' | 'Pending';
+  approval_status: 'Approved' | 'Denied' | 'Pending' | 'Denied with Comment';
   approval_comment: string | null;
 }
 export default function Monitoring() {
@@ -52,7 +52,7 @@ export default function Monitoring() {
   const [editFileName, setEditFileName] = useState('');
   const [editPic, setEditPic] = useState('');
   const [editTargetSubmitDate, setEditTargetSubmitDate] = useState<Date>();
-  const [approvalStatus, setApprovalStatus] = useState<'Approved' | 'Denied' | 'Pending'>('Pending');
+  const [approvalStatus, setApprovalStatus] = useState<'Approved' | 'Denied' | 'Pending' | 'Denied with Comment'>('Pending');
   const [approvalComment, setApprovalComment] = useState('');
   const [picFilter, setPicFilter] = useState<string>('all');
   const [statusCategoryFilter, setStatusCategoryFilter] = useState<'ALL' | 'IFR' | 'IFA' | 'IFB'>('ALL');

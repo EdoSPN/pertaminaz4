@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Pencil, CalendarIcon, Check, ChevronsUpDown, Trash2, FileText, Printer, FolderOpen } from 'lucide-react';
 import { DocumentFilesDialog } from '@/components/DocumentFilesDialog';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
@@ -40,7 +41,7 @@ interface MonitoringData {
   actual_submit_ifr: string | null;
   actual_submit_ifa: string | null;
   actual_submit_ifb: string | null;
-  approval_status: 'Approved' | 'Denied' | 'Pending';
+  approval_status: 'Approved' | 'Denied' | 'Pending' | 'Denied with Comment';
   approval_comment: string | null;
 }
 
@@ -67,8 +68,10 @@ export default function Area2DocumentTracking() {
   const [editFileName, setEditFileName] = useState('');
   const [editPic, setEditPic] = useState('');
   const [editTargetSubmitDate, setEditTargetSubmitDate] = useState<Date>();
-  const [approvalStatus, setApprovalStatus] = useState<'Approved' | 'Denied' | 'Pending'>('Pending');
+  const [approvalStatus, setApprovalStatus] = useState<'Approved' | 'Denied' | 'Pending' | 'Denied with Comment'>('Pending');
   const [approvalComment, setApprovalComment] = useState('');
+  const [commentDialogOpen, setCommentDialogOpen] = useState(false);
+  const [commentDialogItem, setCommentDialogItem] = useState<MonitoringData | null>(null);
   const [picFilter, setPicFilter] = useState<string>('all');
   const [statusCategoryFilter, setStatusCategoryFilter] = useState<'ALL' | 'IFR' | 'IFA' | 'IFB'>('ALL');
   const [targetSubmitDate, setTargetSubmitDate] = useState<Date>();
@@ -314,9 +317,15 @@ export default function Area2DocumentTracking() {
   const handleSaveApproval = async () => {
     if (!currentEditItem) return;
     
+    // Require comment when status is "Denied with Comment"
+    if (approvalStatus === 'Denied with Comment' && !approvalComment.trim()) {
+      toast.error('Comment is required for "Denied with Comment" status');
+      return;
+    }
+    
     const validation = validateMonitoringData({
       file_name: currentEditItem.file_name,
-      approval_comment: approvalComment.trim() || null,
+      approval_comment: approvalStatus === 'Denied with Comment' ? approvalComment.trim() : null,
     });
 
     if (!validation.success) {
@@ -328,7 +337,7 @@ export default function Area2DocumentTracking() {
       .from('prabumulih_monitoring_data')
       .update({
         approval_status: approvalStatus,
-        approval_comment: validation.data.approval_comment,
+        approval_comment: approvalStatus === 'Denied with Comment' ? validation.data.approval_comment : null,
       })
       .eq('id', currentEditItem.id);
     if (error) {
@@ -337,6 +346,7 @@ export default function Area2DocumentTracking() {
       toast.success('Approval status updated successfully');
       setApprovalDialogOpen(false);
       setCurrentEditItem(null);
+      setApprovalComment('');
       fetchMonitoringData();
     }
   };
@@ -518,6 +528,7 @@ export default function Area2DocumentTracking() {
     switch (status) {
       case 'Approved': return 'bg-green-100 text-green-800';
       case 'Denied': return 'bg-red-100 text-red-800';
+      case 'Denied with Comment': return 'bg-orange-100 text-orange-800';
       default: return 'bg-yellow-100 text-yellow-800';
     }
   };
@@ -565,9 +576,22 @@ export default function Area2DocumentTracking() {
         <TableCell>{formatDate(actualDate)}</TableCell>
         <TableCell className={getExplanationColor(explanation)}>{explanation}</TableCell>
         <TableCell>
-          <span className={`px-2 py-1 rounded-full text-xs ${getApprovalStatusColor(item.approval_status)}`}>
-            {item.approval_status}
-          </span>
+          {item.approval_status === 'Denied with Comment' ? (
+            <button
+              onClick={() => {
+                setCommentDialogItem(item);
+                setCommentDialogOpen(true);
+              }}
+              className={`px-2 py-1 rounded-full text-xs cursor-pointer hover:opacity-80 transition-opacity ${getApprovalStatusColor(item.approval_status)}`}
+              title="Click to view comment"
+            >
+              {item.approval_status}
+            </button>
+          ) : (
+            <span className={`px-2 py-1 rounded-full text-xs ${getApprovalStatusColor(item.approval_status)}`}>
+              {item.approval_status}
+            </span>
+          )}
         </TableCell>
         <TableCell>
           <div className="flex gap-1 flex-wrap">
@@ -1121,7 +1145,15 @@ export default function Area2DocumentTracking() {
           <div className="space-y-4">
             <div>
               <Label>Approval Status</Label>
-              <Select value={approvalStatus} onValueChange={(value: 'Approved' | 'Denied' | 'Pending') => setApprovalStatus(value)}>
+              <Select 
+                value={approvalStatus} 
+                onValueChange={(value: 'Approved' | 'Denied' | 'Pending' | 'Denied with Comment') => {
+                  setApprovalStatus(value);
+                  if (value !== 'Denied with Comment') {
+                    setApprovalComment('');
+                  }
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -1129,18 +1161,53 @@ export default function Area2DocumentTracking() {
                   <SelectItem value="Pending">Pending</SelectItem>
                   <SelectItem value="Approved">Approved</SelectItem>
                   <SelectItem value="Denied">Denied</SelectItem>
+                  <SelectItem value="Denied with Comment">Denied with Comment</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>Comment</Label>
-              <Input
-                value={approvalComment}
-                onChange={(e) => setApprovalComment(e.target.value)}
-                placeholder="Enter approval comment"
-              />
-            </div>
+            {approvalStatus === 'Denied with Comment' && (
+              <div>
+                <Label>Comment <span className="text-red-500">*</span></Label>
+                <Textarea
+                  value={approvalComment}
+                  onChange={(e) => setApprovalComment(e.target.value)}
+                  placeholder="Enter reason for denial..."
+                  className="min-h-[100px]"
+                />
+              </div>
+            )}
             <Button onClick={handleSaveApproval} className="w-full">Save Changes</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Comment View Dialog */}
+      <Dialog open={commentDialogOpen} onOpenChange={setCommentDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="px-2 py-1 rounded-full text-xs bg-orange-100 text-orange-800">
+                Denied with Comment
+              </span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-muted-foreground">File Name</Label>
+              <p className="font-medium">{commentDialogItem?.file_name}</p>
+            </div>
+            <div>
+              <Label className="text-muted-foreground">Category</Label>
+              <p className="font-medium">{commentDialogItem?.status_category}</p>
+            </div>
+            <div>
+              <Label className="text-muted-foreground">Denial Comment</Label>
+              <div className="mt-1 p-3 bg-slate-50 rounded-lg border">
+                <p className="text-sm whitespace-pre-wrap">
+                  {commentDialogItem?.approval_comment || 'No comment provided'}
+                </p>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

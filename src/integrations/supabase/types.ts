@@ -741,7 +741,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "reviewer" | "approver" | "viewer" | "user"
-      approval_status: "Approved" | "Denied" | "Pending"
+      approval_status: "Approved" | "Denied" | "Pending" | "Denied with Comment"
       status_category: "IFR" | "IFA" | "IFB"
       status_description: "Not Yet" | "In-Progress" | "Complete"
     }
@@ -872,7 +872,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "reviewer", "approver", "viewer", "user"],
-      approval_status: ["Approved", "Denied", "Pending"],
+      approval_status: ["Approved", "Denied", "Pending", "Denied with Comment"],
       status_category: ["IFR", "IFA", "IFB"],
       status_description: ["Not Yet", "In-Progress", "Complete"],
     },

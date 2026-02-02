@@ -23,6 +23,18 @@ import { validateMonitoringData } from '@/lib/validation';
 const PROJECT_ID = '32ab11e0-59df-4e56-9586-a51315672be4';
 
 type FieldType = 'Limau' | 'OK - RT' | 'Prabumulih';
+type DisciplineType = 'Process' | 'Process Safety' | 'Mechanical' | 'Electrical' | 'Instrument' | 'Piping' | 'Civil & Structure' | 'Project Management';
+
+const DISCIPLINE_ABBREVIATIONS: Record<DisciplineType, string> = {
+  'Process': 'PR',
+  'Process Safety': 'PS',
+  'Mechanical': 'ME',
+  'Electrical': 'EL',
+  'Instrument': 'IN',
+  'Piping': 'PI',
+  'Civil & Structure': 'CS',
+  'Project Management': 'PM',
+};
 
 interface MonitoringData {
   id: string;
@@ -35,6 +47,7 @@ interface MonitoringData {
   status_description_ifa: 'Not Yet' | 'In-Progress' | 'Complete';
   status_description_ifb: 'Not Yet' | 'In-Progress' | 'Complete';
   pic: string | null;
+  discipline: DisciplineType | null;
   target_submit_ifr: string | null;
   target_submit_ifa: string | null;
   target_submit_ifb: string | null;
@@ -85,11 +98,12 @@ export default function Area2DocumentTracking() {
   const [recapDialogOpen, setRecapDialogOpen] = useState(false);
   const [field, setField] = useState<FieldType>('Prabumulih');
   const [editField, setEditField] = useState<FieldType>('Prabumulih');
+  const [discipline, setDiscipline] = useState<DisciplineType | null>(null);
+  const [editDiscipline, setEditDiscipline] = useState<DisciplineType | null>(null);
   const [fieldFilter, setFieldFilter] = useState<string[]>(['all']);
   const [fieldFilterOpen, setFieldFilterOpen] = useState(false);
   const [fileDialogOpen, setFileDialogOpen] = useState(false);
   const [fileDialogItem, setFileDialogItem] = useState<MonitoringData | null>(null);
-
   const openFileDialog = (item: MonitoringData) => {
     setFileDialogItem(item);
     setFileDialogOpen(true);
@@ -173,6 +187,7 @@ export default function Area2DocumentTracking() {
       const mappedData = (data || []).map(item => ({
         ...item,
         field: (item.field || 'Prabumulih') as FieldType,
+        discipline: item.discipline as DisciplineType | null,
       }));
       setMonitoringData(mappedData);
     }
@@ -208,6 +223,7 @@ export default function Area2DocumentTracking() {
     setEditPic(item.pic || '');
     setEditDocumentNumber(item.document_number || '');
     setEditField(item.field || 'Prabumulih');
+    setEditDiscipline(item.discipline || null);
     const targetDate = item.status_category === 'IFR' 
       ? item.target_submit_ifr 
       : item.status_category === 'IFA' 
@@ -277,6 +293,7 @@ export default function Area2DocumentTracking() {
       pic: validation.data.pic,
       document_number: validation.data.document_number,
       field: editField,
+      discipline: editDiscipline,
     };
     const { error } = await supabase
       .from('prabumulih_monitoring_data')
@@ -392,6 +409,7 @@ export default function Area2DocumentTracking() {
           file_name: validation.data.file_name,
           document_number: validation.data.document_number,
           pic: validation.data.pic,
+          discipline: discipline,
           status_category: 'IFR',
           target_submit_ifr: targetSubmitDate ? targetSubmitDate.toISOString() : null,
           target_submit_ifa: targetSubmitDateIFA ? targetSubmitDateIFA.toISOString() : null,
@@ -403,6 +421,7 @@ export default function Area2DocumentTracking() {
           file_name: validation.data.file_name,
           document_number: validation.data.document_number,
           pic: validation.data.pic,
+          discipline: discipline,
           status_category: 'IFA',
           target_submit_ifr: targetSubmitDate ? targetSubmitDate.toISOString() : null,
           target_submit_ifa: targetSubmitDateIFA ? targetSubmitDateIFA.toISOString() : null,
@@ -414,6 +433,7 @@ export default function Area2DocumentTracking() {
           file_name: validation.data.file_name,
           document_number: validation.data.document_number,
           pic: validation.data.pic,
+          discipline: discipline,
           status_category: 'IFB',
           target_submit_ifr: targetSubmitDate ? targetSubmitDate.toISOString() : null,
           target_submit_ifa: targetSubmitDateIFA ? targetSubmitDateIFA.toISOString() : null,
@@ -429,6 +449,7 @@ export default function Area2DocumentTracking() {
       setFileName('');
       setDocumentNumber('');
       setField('Prabumulih');
+      setDiscipline(null);
       setTargetSubmitDate(undefined);
       setTargetSubmitDateIFA(undefined);
       setTargetSubmitDateIFB(undefined);
@@ -461,6 +482,7 @@ export default function Area2DocumentTracking() {
           document_number: item.document_number,
           file_name: item.file_name,
           pic: item.pic,
+          discipline: item.discipline,
           status_ifr: 'Not Yet' as string,
           status_ifa: 'Not Yet' as string,
           status_ifb: 'Not Yet' as string,
@@ -476,7 +498,7 @@ export default function Area2DocumentTracking() {
         acc[item.file_name].status_ifb = item.status_description_ifb || 'Not Yet';
       }
       return acc;
-    }, {} as Record<string, { field: string; document_number: string | null; file_name: string; pic: string | null; status_ifr: string; status_ifa: string; status_ifb: string }>);
+    }, {} as Record<string, { field: string; document_number: string | null; file_name: string; pic: string | null; discipline: DisciplineType | null; status_ifr: string; status_ifa: string; status_ifb: string }>);
 
     return Object.values(recapGroups).sort((a, b) => {
       const picA = (a.pic || '').toLowerCase();
@@ -497,6 +519,7 @@ export default function Area2DocumentTracking() {
         file_name: item.file_name,
         document_number: item.document_number,
         pic: item.pic,
+        discipline: item.discipline,
         id: item.id,
         ifr: null as MonitoringData | null,
         ifa: null as MonitoringData | null,
@@ -507,7 +530,7 @@ export default function Area2DocumentTracking() {
     if (item.status_category === 'IFA') acc[item.file_name].ifa = item;
     if (item.status_category === 'IFB') acc[item.file_name].ifb = item;
     return acc;
-  }, {} as Record<string, { field: string; file_name: string; document_number: string | null; pic: string | null; id: string; ifr: MonitoringData | null; ifa: MonitoringData | null; ifb: MonitoringData | null }>);
+  }, {} as Record<string, { field: string; file_name: string; document_number: string | null; pic: string | null; discipline: DisciplineType | null; id: string; ifr: MonitoringData | null; ifa: MonitoringData | null; ifb: MonitoringData | null }>);
 
   const sortedGroupedData = Object.values(groupedData).sort((a, b) => {
     const picA = (a.pic || '').toLowerCase();
@@ -542,7 +565,7 @@ export default function Area2DocumentTracking() {
     }
   };
 
-  const renderDataRows = (item: MonitoringData, group: { field: string; file_name: string; document_number: string | null; pic: string | null; ifr: MonitoringData | null; ifa: MonitoringData | null; ifb: MonitoringData | null }, bgClass: string) => {
+  const renderDataRows = (item: MonitoringData, group: { field: string; file_name: string; document_number: string | null; pic: string | null; discipline: DisciplineType | null; ifr: MonitoringData | null; ifa: MonitoringData | null; ifb: MonitoringData | null }, bgClass: string) => {
     const statusDesc = item.status_category === 'IFR' 
       ? item.status_description_ifr 
       : item.status_category === 'IFA' 
@@ -572,6 +595,9 @@ export default function Area2DocumentTracking() {
           </span>
         </TableCell>
         <TableCell>{group.pic || '-'}</TableCell>
+        <TableCell>
+          {group.discipline ? DISCIPLINE_ABBREVIATIONS[group.discipline] : '-'}
+        </TableCell>
         <TableCell>{formatDate(targetDate)}</TableCell>
         <TableCell>{formatDate(actualDate)}</TableCell>
         <TableCell className={getExplanationColor(explanation)}>{explanation}</TableCell>
@@ -667,6 +693,7 @@ export default function Area2DocumentTracking() {
                       <TableHead>Doc Number</TableHead>
                       <TableHead>File Name</TableHead>
                       <TableHead>PIC</TableHead>
+                      <TableHead>Discipline</TableHead>
                       <TableHead>IFR</TableHead>
                       <TableHead>IFA</TableHead>
                       <TableHead>IFB</TableHead>
@@ -680,6 +707,9 @@ export default function Area2DocumentTracking() {
                         <TableCell>{item.document_number || '-'}</TableCell>
                         <TableCell>{item.file_name}</TableCell>
                         <TableCell>{item.pic || '-'}</TableCell>
+                        <TableCell>
+                          {item.discipline ? DISCIPLINE_ABBREVIATIONS[item.discipline as DisciplineType] : '-'}
+                        </TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(item.status_ifr)}`}>
                             {item.status_ifr}
@@ -795,6 +825,27 @@ export default function Area2DocumentTracking() {
                         </Command>
                       </PopoverContent>
                     </Popover>
+                  </div>
+                  <div>
+                    <Label htmlFor="discipline">Discipline</Label>
+                    <Select 
+                      value={discipline || ''} 
+                      onValueChange={(value: DisciplineType) => setDiscipline(value)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select discipline" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Process">Process</SelectItem>
+                        <SelectItem value="Process Safety">Process Safety</SelectItem>
+                        <SelectItem value="Mechanical">Mechanical</SelectItem>
+                        <SelectItem value="Electrical">Electrical</SelectItem>
+                        <SelectItem value="Instrument">Instrument</SelectItem>
+                        <SelectItem value="Piping">Piping</SelectItem>
+                        <SelectItem value="Civil & Structure">Civil & Structure</SelectItem>
+                        <SelectItem value="Project Management">Project Management</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <Label>Target Submit IFR</Label>
@@ -962,6 +1013,7 @@ export default function Area2DocumentTracking() {
                 <TableHead>Category</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>PIC</TableHead>
+                <TableHead>Discipline</TableHead>
                 <TableHead>Target Date</TableHead>
                 <TableHead>Actual Date</TableHead>
                 <TableHead>Submit Status</TableHead>
@@ -1105,6 +1157,27 @@ export default function Area2DocumentTracking() {
                   </Command>
                 </PopoverContent>
               </Popover>
+            </div>
+            <div>
+              <Label>Discipline</Label>
+              <Select 
+                value={editDiscipline || ''} 
+                onValueChange={(value: DisciplineType) => setEditDiscipline(value)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select discipline" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Process">Process</SelectItem>
+                  <SelectItem value="Process Safety">Process Safety</SelectItem>
+                  <SelectItem value="Mechanical">Mechanical</SelectItem>
+                  <SelectItem value="Electrical">Electrical</SelectItem>
+                  <SelectItem value="Instrument">Instrument</SelectItem>
+                  <SelectItem value="Piping">Piping</SelectItem>
+                  <SelectItem value="Civil & Structure">Civil & Structure</SelectItem>
+                  <SelectItem value="Project Management">Project Management</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>Target Submit Date ({currentEditItem?.status_category})</Label>

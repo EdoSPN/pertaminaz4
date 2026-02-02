@@ -561,6 +561,7 @@ export type Database = {
           approval_comment: string | null
           approval_status: Database["public"]["Enums"]["approval_status"]
           created_at: string | null
+          discipline: string | null
           document_number: string | null
           field: string | null
           file_name: string
@@ -589,6 +590,7 @@ export type Database = {
           approval_comment?: string | null
           approval_status?: Database["public"]["Enums"]["approval_status"]
           created_at?: string | null
+          discipline?: string | null
           document_number?: string | null
           field?: string | null
           file_name: string
@@ -617,6 +619,7 @@ export type Database = {
           approval_comment?: string | null
           approval_status?: Database["public"]["Enums"]["approval_status"]
           created_at?: string | null
+          discipline?: string | null
           document_number?: string | null
           field?: string | null
           file_name?: string

@@ -693,7 +693,7 @@ export default function Area2DocumentTracking() {
                       <TableHead>Doc Number</TableHead>
                       <TableHead>File Name</TableHead>
                       <TableHead>PIC</TableHead>
-                      <TableHead>Discipline</TableHead>
+                      <TableHead>DISC</TableHead>
                       <TableHead>IFR</TableHead>
                       <TableHead>IFA</TableHead>
                       <TableHead>IFB</TableHead>
@@ -1013,7 +1013,7 @@ export default function Area2DocumentTracking() {
                 <TableHead>Category</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>PIC</TableHead>
-                <TableHead>Discipline</TableHead>
+                <TableHead>DISC</TableHead>
                 <TableHead>Target Date</TableHead>
                 <TableHead>Actual Date</TableHead>
                 <TableHead>Submit Status</TableHead>

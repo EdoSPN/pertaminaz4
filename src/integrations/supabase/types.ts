@@ -555,6 +555,9 @@ export type Database = {
       }
       prabumulih_monitoring_data: {
         Row: {
+          actual_start_ifa: string | null
+          actual_start_ifb: string | null
+          actual_start_ifr: string | null
           actual_submit_ifa: string | null
           actual_submit_ifb: string | null
           actual_submit_ifr: string | null
@@ -578,12 +581,18 @@ export type Database = {
           status_description_ifr:
             | Database["public"]["Enums"]["status_description"]
             | null
+          target_start_ifa: string | null
+          target_start_ifb: string | null
+          target_start_ifr: string | null
           target_submit_ifa: string | null
           target_submit_ifb: string | null
           target_submit_ifr: string | null
           updated_at: string | null
         }
         Insert: {
+          actual_start_ifa?: string | null
+          actual_start_ifb?: string | null
+          actual_start_ifr?: string | null
           actual_submit_ifa?: string | null
           actual_submit_ifb?: string | null
           actual_submit_ifr?: string | null
@@ -607,12 +616,18 @@ export type Database = {
           status_description_ifr?:
             | Database["public"]["Enums"]["status_description"]
             | null
+          target_start_ifa?: string | null
+          target_start_ifb?: string | null
+          target_start_ifr?: string | null
           target_submit_ifa?: string | null
           target_submit_ifb?: string | null
           target_submit_ifr?: string | null
           updated_at?: string | null
         }
         Update: {
+          actual_start_ifa?: string | null
+          actual_start_ifb?: string | null
+          actual_start_ifr?: string | null
           actual_submit_ifa?: string | null
           actual_submit_ifb?: string | null
           actual_submit_ifr?: string | null
@@ -636,6 +651,9 @@ export type Database = {
           status_description_ifr?:
             | Database["public"]["Enums"]["status_description"]
             | null
+          target_start_ifa?: string | null
+          target_start_ifb?: string | null
+          target_start_ifr?: string | null
           target_submit_ifa?: string | null
           target_submit_ifb?: string | null
           target_submit_ifr?: string | null

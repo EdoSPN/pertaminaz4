@@ -54,6 +54,12 @@ interface MonitoringData {
   actual_submit_ifr: string | null;
   actual_submit_ifa: string | null;
   actual_submit_ifb: string | null;
+  target_start_ifr: string | null;
+  target_start_ifa: string | null;
+  target_start_ifb: string | null;
+  actual_start_ifr: string | null;
+  actual_start_ifa: string | null;
+  actual_start_ifb: string | null;
   approval_status: 'Approved' | 'Denied' | 'Pending' | 'Denied with Comment';
   approval_comment: string | null;
 }
@@ -100,6 +106,11 @@ export default function Area2DocumentTracking() {
   const [editField, setEditField] = useState<FieldType>('Prabumulih');
   const [discipline, setDiscipline] = useState<DisciplineType | null>(null);
   const [editDiscipline, setEditDiscipline] = useState<DisciplineType | null>(null);
+  const [targetStartDate, setTargetStartDate] = useState<Date>();
+  const [targetStartDateIFA, setTargetStartDateIFA] = useState<Date>();
+  const [targetStartDateIFB, setTargetStartDateIFB] = useState<Date>();
+  const [editTargetStartDate, setEditTargetStartDate] = useState<Date>();
+  const [editActualStartDate, setEditActualStartDate] = useState('');
   const [fieldFilter, setFieldFilter] = useState<string[]>(['all']);
   const [fieldFilterOpen, setFieldFilterOpen] = useState(false);
   const [fileDialogOpen, setFileDialogOpen] = useState(false);
@@ -214,6 +225,12 @@ export default function Area2DocumentTracking() {
       ? item.actual_submit_ifa 
       : item.actual_submit_ifb;
     setEditActualSubmit(actualDate ? format(new Date(actualDate), 'yyyy-MM-dd') : '');
+    const actualStartDate = item.status_category === 'IFR' 
+      ? item.actual_start_ifr 
+      : item.status_category === 'IFA' 
+      ? item.actual_start_ifa 
+      : item.actual_start_ifb;
+    setEditActualStartDate(actualStartDate ? format(new Date(actualStartDate), 'yyyy-MM-dd') : '');
     setEditDialogOpen(true);
   };
 
@@ -230,6 +247,12 @@ export default function Area2DocumentTracking() {
       ? item.target_submit_ifa 
       : item.target_submit_ifb;
     setEditTargetSubmitDate(targetDate ? new Date(targetDate) : undefined);
+    const targetStartDateVal = item.status_category === 'IFR' 
+      ? item.target_start_ifr 
+      : item.status_category === 'IFA' 
+      ? item.target_start_ifa 
+      : item.target_start_ifb;
+    setEditTargetStartDate(targetStartDateVal ? new Date(targetStartDateVal) : undefined);
     setReviewerEditDialogOpen(true);
   };
 
@@ -245,12 +268,15 @@ export default function Area2DocumentTracking() {
     const updates: Record<string, unknown> = {};
     if (currentEditItem.status_category === 'IFR') {
       updates.status_description_ifr = editStatusDescription;
+      updates.actual_start_ifr = editActualStartDate ? new Date(editActualStartDate).toISOString() : null;
       updates.actual_submit_ifr = editActualSubmit ? new Date(editActualSubmit).toISOString() : null;
     } else if (currentEditItem.status_category === 'IFA') {
       updates.status_description_ifa = editStatusDescription;
+      updates.actual_start_ifa = editActualStartDate ? new Date(editActualStartDate).toISOString() : null;
       updates.actual_submit_ifa = editActualSubmit ? new Date(editActualSubmit).toISOString() : null;
     } else {
       updates.status_description_ifb = editStatusDescription;
+      updates.actual_start_ifb = editActualStartDate ? new Date(editActualStartDate).toISOString() : null;
       updates.actual_submit_ifb = editActualSubmit ? new Date(editActualSubmit).toISOString() : null;
     }
     const { error } = await supabase
@@ -303,10 +329,13 @@ export default function Area2DocumentTracking() {
     if (!error) {
       const categoryUpdate: Record<string, unknown> = {};
       if (currentEditItem.status_category === 'IFR') {
+        categoryUpdate.target_start_ifr = editTargetStartDate ? editTargetStartDate.toISOString() : null;
         categoryUpdate.target_submit_ifr = editTargetSubmitDate ? editTargetSubmitDate.toISOString() : null;
       } else if (currentEditItem.status_category === 'IFA') {
+        categoryUpdate.target_start_ifa = editTargetStartDate ? editTargetStartDate.toISOString() : null;
         categoryUpdate.target_submit_ifa = editTargetSubmitDate ? editTargetSubmitDate.toISOString() : null;
       } else {
+        categoryUpdate.target_start_ifb = editTargetStartDate ? editTargetStartDate.toISOString() : null;
         categoryUpdate.target_submit_ifb = editTargetSubmitDate ? editTargetSubmitDate.toISOString() : null;
       }
       const { error: categoryError } = await supabase
@@ -411,6 +440,9 @@ export default function Area2DocumentTracking() {
           pic: validation.data.pic,
           discipline: discipline,
           status_category: 'IFR',
+          target_start_ifr: targetStartDate ? targetStartDate.toISOString() : null,
+          target_start_ifa: targetStartDateIFA ? targetStartDateIFA.toISOString() : null,
+          target_start_ifb: targetStartDateIFB ? targetStartDateIFB.toISOString() : null,
           target_submit_ifr: targetSubmitDate ? targetSubmitDate.toISOString() : null,
           target_submit_ifa: targetSubmitDateIFA ? targetSubmitDateIFA.toISOString() : null,
           target_submit_ifb: targetSubmitDateIFB ? targetSubmitDateIFB.toISOString() : null,
@@ -423,6 +455,9 @@ export default function Area2DocumentTracking() {
           pic: validation.data.pic,
           discipline: discipline,
           status_category: 'IFA',
+          target_start_ifr: targetStartDate ? targetStartDate.toISOString() : null,
+          target_start_ifa: targetStartDateIFA ? targetStartDateIFA.toISOString() : null,
+          target_start_ifb: targetStartDateIFB ? targetStartDateIFB.toISOString() : null,
           target_submit_ifr: targetSubmitDate ? targetSubmitDate.toISOString() : null,
           target_submit_ifa: targetSubmitDateIFA ? targetSubmitDateIFA.toISOString() : null,
           target_submit_ifb: targetSubmitDateIFB ? targetSubmitDateIFB.toISOString() : null,
@@ -435,6 +470,9 @@ export default function Area2DocumentTracking() {
           pic: validation.data.pic,
           discipline: discipline,
           status_category: 'IFB',
+          target_start_ifr: targetStartDate ? targetStartDate.toISOString() : null,
+          target_start_ifa: targetStartDateIFA ? targetStartDateIFA.toISOString() : null,
+          target_start_ifb: targetStartDateIFB ? targetStartDateIFB.toISOString() : null,
           target_submit_ifr: targetSubmitDate ? targetSubmitDate.toISOString() : null,
           target_submit_ifa: targetSubmitDateIFA ? targetSubmitDateIFA.toISOString() : null,
           target_submit_ifb: targetSubmitDateIFB ? targetSubmitDateIFB.toISOString() : null,
@@ -450,6 +488,9 @@ export default function Area2DocumentTracking() {
       setDocumentNumber('');
       setField('Prabumulih');
       setDiscipline(null);
+      setTargetStartDate(undefined);
+      setTargetStartDateIFA(undefined);
+      setTargetStartDateIFB(undefined);
       setTargetSubmitDate(undefined);
       setTargetSubmitDateIFA(undefined);
       setTargetSubmitDateIFB(undefined);
@@ -581,6 +622,16 @@ export default function Area2DocumentTracking() {
       : item.status_category === 'IFA' 
       ? item.actual_submit_ifa 
       : item.actual_submit_ifb;
+    const targetStartDateVal = item.status_category === 'IFR' 
+      ? item.target_start_ifr 
+      : item.status_category === 'IFA' 
+      ? item.target_start_ifa 
+      : item.target_start_ifb;
+    const actualStartDateVal = item.status_category === 'IFR' 
+      ? item.actual_start_ifr 
+      : item.status_category === 'IFA' 
+      ? item.actual_start_ifa 
+      : item.actual_start_ifb;
     const explanation = getSubmitExplanation(targetDate, actualDate);
 
     return (
@@ -598,6 +649,8 @@ export default function Area2DocumentTracking() {
         <TableCell>
           {group.discipline ? DISCIPLINE_ABBREVIATIONS[group.discipline] : '-'}
         </TableCell>
+        <TableCell>{formatDate(targetStartDateVal)}</TableCell>
+        <TableCell>{formatDate(actualStartDateVal)}</TableCell>
         <TableCell>{formatDate(targetDate)}</TableCell>
         <TableCell>{formatDate(actualDate)}</TableCell>
         <TableCell className={getExplanationColor(explanation)}>{explanation}</TableCell>
@@ -848,6 +901,32 @@ export default function Area2DocumentTracking() {
                     </Select>
                   </div>
                   <div>
+                    <Label>Target Start IFR</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !targetStartDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {targetStartDate ? format(targetStartDate, 'dd/MM/yyyy') : "Pick a date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={targetStartDate}
+                          onSelect={setTargetStartDate}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div>
                     <Label>Target Submit IFR</Label>
                     <Popover>
                       <PopoverTrigger asChild>
@@ -868,6 +947,33 @@ export default function Area2DocumentTracking() {
                           selected={targetSubmitDate}
                           onSelect={setTargetSubmitDate}
                           initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div>
+                    <Label>Target Start IFA</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !targetStartDateIFA && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {targetStartDateIFA ? format(targetStartDateIFA, 'dd/MM/yyyy') : "Pick a date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={targetStartDateIFA}
+                          onSelect={setTargetStartDateIFA}
+                          initialFocus
+                          className="pointer-events-auto"
                         />
                       </PopoverContent>
                     </Popover>
@@ -893,6 +999,33 @@ export default function Area2DocumentTracking() {
                           selected={targetSubmitDateIFA}
                           onSelect={setTargetSubmitDateIFA}
                           initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div>
+                    <Label>Target Start IFB</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !targetStartDateIFB && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {targetStartDateIFB ? format(targetStartDateIFB, 'dd/MM/yyyy') : "Pick a date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={targetStartDateIFB}
+                          onSelect={setTargetStartDateIFB}
+                          initialFocus
+                          className="pointer-events-auto"
                         />
                       </PopoverContent>
                     </Popover>
@@ -918,6 +1051,7 @@ export default function Area2DocumentTracking() {
                           selected={targetSubmitDateIFB}
                           onSelect={setTargetSubmitDateIFB}
                           initialFocus
+                          className="pointer-events-auto"
                         />
                       </PopoverContent>
                     </Popover>
@@ -1014,8 +1148,10 @@ export default function Area2DocumentTracking() {
                 <TableHead>Status</TableHead>
                 <TableHead>PIC</TableHead>
                 <TableHead>DISC</TableHead>
-                <TableHead>Target Date</TableHead>
-                <TableHead>Actual Date</TableHead>
+                <TableHead>Target Start</TableHead>
+                <TableHead>Actual Start</TableHead>
+                <TableHead>Target Submit</TableHead>
+                <TableHead>Actual Submit</TableHead>
                 <TableHead>Submit Status</TableHead>
                 <TableHead>Approval</TableHead>
                 <TableHead>Actions</TableHead>
@@ -1060,6 +1196,14 @@ export default function Area2DocumentTracking() {
                   <SelectItem value="Complete">Complete</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label>Actual Start Date</Label>
+              <Input
+                type="date"
+                value={editActualStartDate}
+                onChange={(e) => setEditActualStartDate(e.target.value)}
+              />
             </div>
             <div>
               <Label>Actual Submit Date</Label>
@@ -1180,6 +1324,32 @@ export default function Area2DocumentTracking() {
               </Select>
             </div>
             <div>
+              <Label>Target Start Date ({currentEditItem?.status_category})</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !editTargetStartDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {editTargetStartDate ? format(editTargetStartDate, 'dd/MM/yyyy') : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={editTargetStartDate}
+                    onSelect={setEditTargetStartDate}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div>
               <Label>Target Submit Date ({currentEditItem?.status_category})</Label>
               <Popover>
                 <PopoverTrigger asChild>
@@ -1200,6 +1370,7 @@ export default function Area2DocumentTracking() {
                     selected={editTargetSubmitDate}
                     onSelect={setEditTargetSubmitDate}
                     initialFocus
+                    className="pointer-events-auto"
                   />
                 </PopoverContent>
               </Popover>

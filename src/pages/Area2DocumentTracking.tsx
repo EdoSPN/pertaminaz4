@@ -43,9 +43,9 @@ interface MonitoringData {
   file_name: string;
   document_number: string | null;
   status_category: 'IFR' | 'IFA' | 'IFB';
-  status_description_ifr: 'Not Yet' | 'In-Progress' | 'Complete';
-  status_description_ifa: 'Not Yet' | 'In-Progress' | 'Complete';
-  status_description_ifb: 'Not Yet' | 'In-Progress' | 'Complete';
+  status_description_ifr: 'Not Yet' | 'Start' | 'In-Progress' | 'Complete';
+  status_description_ifa: 'Not Yet' | 'Start' | 'In-Progress' | 'Complete';
+  status_description_ifb: 'Not Yet' | 'Start' | 'In-Progress' | 'Complete';
   pic: string | null;
   discipline: DisciplineType | null;
   target_submit_ifr: string | null;
@@ -82,7 +82,8 @@ export default function Area2DocumentTracking() {
   const [pic, setPic] = useState('');
   const [fileName, setFileName] = useState('');
   const [currentEditItem, setCurrentEditItem] = useState<MonitoringData | null>(null);
-  const [editStatusDescription, setEditStatusDescription] = useState<'Not Yet' | 'In-Progress' | 'Complete'>('Not Yet');
+  const [editStatusDescription, setEditStatusDescription] = useState<'Not Yet' | 'Start' | 'In-Progress' | 'Complete'>('Not Yet');
+  const [startTicketConfirmOpen, setStartTicketConfirmOpen] = useState(false);
   const [editActualSubmit, setEditActualSubmit] = useState('');
   const [editFileName, setEditFileName] = useState('');
   const [editPic, setEditPic] = useState('');
@@ -261,6 +262,38 @@ export default function Area2DocumentTracking() {
     setApprovalStatus(item.approval_status);
     setApprovalComment(item.approval_comment || '');
     setApprovalDialogOpen(true);
+  };
+
+  const handleStartTicket = async () => {
+    if (!currentEditItem) return;
+    const now = new Date().toISOString();
+    const updates: Record<string, unknown> = {};
+    
+    if (currentEditItem.status_category === 'IFR') {
+      updates.status_description_ifr = 'Start';
+      updates.actual_start_ifr = now;
+    } else if (currentEditItem.status_category === 'IFA') {
+      updates.status_description_ifa = 'Start';
+      updates.actual_start_ifa = now;
+    } else {
+      updates.status_description_ifb = 'Start';
+      updates.actual_start_ifb = now;
+    }
+
+    const { error } = await supabase
+      .from('prabumulih_monitoring_data')
+      .update(updates)
+      .eq('id', currentEditItem.id);
+
+    if (error) {
+      toast.error('Failed to start ticket');
+    } else {
+      toast.success('Ticket started successfully');
+      setEditDialogOpen(false);
+      setStartTicketConfirmOpen(false);
+      setCurrentEditItem(null);
+      fetchMonitoringData();
+    }
   };
 
   const handleSaveEdit = async () => {
@@ -584,6 +617,7 @@ export default function Area2DocumentTracking() {
     switch (status) {
       case 'Complete': return 'bg-green-100 text-green-800';
       case 'In-Progress': return 'bg-yellow-100 text-yellow-800';
+      case 'Start': return 'bg-blue-100 text-blue-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -1178,7 +1212,10 @@ export default function Area2DocumentTracking() {
       )}
 
       {/* Edit Status Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+      <Dialog open={editDialogOpen} onOpenChange={(open) => {
+        setEditDialogOpen(open);
+        if (!open) setStartTicketConfirmOpen(false);
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Status - {currentEditItem?.status_category}</DialogTitle>
@@ -1186,12 +1223,17 @@ export default function Area2DocumentTracking() {
           <div className="space-y-4">
             <div>
               <Label>Status Description</Label>
-              <Select value={editStatusDescription} onValueChange={(value: 'Not Yet' | 'In-Progress' | 'Complete') => setEditStatusDescription(value)}>
-                <SelectTrigger>
+              <Select 
+                value={editStatusDescription} 
+                onValueChange={(value: 'Not Yet' | 'Start' | 'In-Progress' | 'Complete') => setEditStatusDescription(value)}
+                disabled={editStatusDescription === 'Not Yet'}
+              >
+                <SelectTrigger className={editStatusDescription === 'Not Yet' ? 'opacity-50' : ''}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Not Yet">Not Yet</SelectItem>
+                  <SelectItem value="Start">Start</SelectItem>
                   <SelectItem value="In-Progress">In-Progress</SelectItem>
                   <SelectItem value="Complete">Complete</SelectItem>
                 </SelectContent>
@@ -1203,6 +1245,8 @@ export default function Area2DocumentTracking() {
                 type="date"
                 value={editActualStartDate}
                 onChange={(e) => setEditActualStartDate(e.target.value)}
+                disabled={editStatusDescription === 'Not Yet'}
+                className={editStatusDescription === 'Not Yet' ? 'opacity-50' : ''}
               />
             </div>
             <div>
@@ -1211,9 +1255,42 @@ export default function Area2DocumentTracking() {
                 type="date"
                 value={editActualSubmit}
                 onChange={(e) => setEditActualSubmit(e.target.value)}
+                disabled={editStatusDescription === 'Not Yet'}
+                className={editStatusDescription === 'Not Yet' ? 'opacity-50' : ''}
               />
             </div>
-            <Button onClick={handleSaveEdit} className="w-full">Save Changes</Button>
+            
+            {/* Start Ticket button - only shown when status is "Not Yet" */}
+            {editStatusDescription === 'Not Yet' && (
+              <AlertDialog open={startTicketConfirmOpen} onOpenChange={setStartTicketConfirmOpen}>
+                <AlertDialogTrigger asChild>
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                    Start Ticket
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirm Start Ticket</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will set the status to "Start" and record today as the 
+                      Actual Start date. The status will automatically change to 
+                      "In-Progress" after 1 day. Are you sure?
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleStartTicket}>
+                      Confirm
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            
+            {/* Save Changes button - only shown when status is NOT "Not Yet" */}
+            {editStatusDescription !== 'Not Yet' && (
+              <Button onClick={handleSaveEdit} className="w-full">Save Changes</Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>

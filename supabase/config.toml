@@ -1,1 +1,4 @@
 project_id = "ntidqouotifrxgmxrqmr"
+
+[functions.update-start-status]
+verify_jwt = false

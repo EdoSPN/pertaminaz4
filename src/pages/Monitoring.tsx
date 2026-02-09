@@ -20,9 +20,9 @@ interface MonitoringData {
   id: string;
   file_name: string;
   status_category: 'IFR' | 'IFA' | 'IFB';
-  status_description_ifr: 'Not Yet' | 'In-Progress' | 'Complete';
-  status_description_ifa: 'Not Yet' | 'In-Progress' | 'Complete';
-  status_description_ifb: 'Not Yet' | 'In-Progress' | 'Complete';
+  status_description_ifr: 'Not Yet' | 'Start' | 'In-Progress' | 'Complete';
+  status_description_ifa: 'Not Yet' | 'Start' | 'In-Progress' | 'Complete';
+  status_description_ifb: 'Not Yet' | 'Start' | 'In-Progress' | 'Complete';
   pic: string | null;
   target_submit_ifr: string | null;
   target_submit_ifa: string | null;
@@ -47,7 +47,7 @@ export default function Monitoring() {
   const [pic, setPic] = useState('');
   const [fileName, setFileName] = useState('');
   const [currentEditItem, setCurrentEditItem] = useState<MonitoringData | null>(null);
-  const [editStatusDescription, setEditStatusDescription] = useState<'Not Yet' | 'In-Progress' | 'Complete'>('Not Yet');
+  const [editStatusDescription, setEditStatusDescription] = useState<'Not Yet' | 'Start' | 'In-Progress' | 'Complete'>('Not Yet');
   const [editActualSubmit, setEditActualSubmit] = useState('');
   const [editFileName, setEditFileName] = useState('');
   const [editPic, setEditPic] = useState('');
@@ -831,7 +831,7 @@ export default function Monitoring() {
           <div className="space-y-4">
             <div>
               <Label htmlFor="statusDescription">Status Description</Label>
-              <Select value={editStatusDescription} onValueChange={(value) => setEditStatusDescription(value as 'Not Yet' | 'In-Progress' | 'Complete')}>
+              <Select value={editStatusDescription} onValueChange={(value) => setEditStatusDescription(value as 'Not Yet' | 'Start' | 'In-Progress' | 'Complete')}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

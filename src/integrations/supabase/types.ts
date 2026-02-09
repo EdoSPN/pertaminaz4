@@ -764,7 +764,7 @@ export type Database = {
       app_role: "admin" | "reviewer" | "approver" | "viewer" | "user"
       approval_status: "Approved" | "Denied" | "Pending" | "Denied with Comment"
       status_category: "IFR" | "IFA" | "IFB"
-      status_description: "Not Yet" | "In-Progress" | "Complete"
+      status_description: "Not Yet" | "Start" | "In-Progress" | "Complete"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -895,7 +895,7 @@ export const Constants = {
       app_role: ["admin", "reviewer", "approver", "viewer", "user"],
       approval_status: ["Approved", "Denied", "Pending", "Denied with Comment"],
       status_category: ["IFR", "IFA", "IFB"],
-      status_description: ["Not Yet", "In-Progress", "Complete"],
+      status_description: ["Not Yet", "Start", "In-Progress", "Complete"],
     },
   },
 } as const

@@ -1,0 +1,1 @@
+ALTER TYPE status_description ADD VALUE 'Start' AFTER 'Not Yet';

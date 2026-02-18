@@ -1297,11 +1297,11 @@ export default function Area2DocumentTracking() {
 
       {/* Edit File Info Dialog */}
       <Dialog open={reviewerEditDialogOpen} onOpenChange={setReviewerEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Edit File Information</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-y-auto flex-1 pr-2">
             <div>
               <Label>Field</Label>
               <Select value={editField} onValueChange={(value: FieldType) => setEditField(value)}>

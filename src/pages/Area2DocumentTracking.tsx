@@ -670,25 +670,25 @@ export default function Area2DocumentTracking() {
 
     return (
       <TableRow key={item.id} className={bgClass}>
-        <TableCell>{group.field || 'Prabumulih'}</TableCell>
-        <TableCell>{group.document_number || '-'}</TableCell>
-        <TableCell>{group.file_name}</TableCell>
-        <TableCell>{item.status_category}</TableCell>
-        <TableCell>
+        <TableCell className="whitespace-nowrap">{group.field || 'Prabumulih'}</TableCell>
+        <TableCell className="whitespace-nowrap">{group.document_number || '-'}</TableCell>
+        <TableCell className="whitespace-nowrap">{group.file_name}</TableCell>
+        <TableCell className="whitespace-nowrap">{item.status_category}</TableCell>
+        <TableCell className="whitespace-nowrap">
           <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(statusDesc)}`}>
             {statusDesc}
           </span>
         </TableCell>
-        <TableCell>{group.pic || '-'}</TableCell>
-        <TableCell>
+        <TableCell className="whitespace-nowrap">{group.pic || '-'}</TableCell>
+        <TableCell className="whitespace-nowrap">
           {group.discipline ? DISCIPLINE_ABBREVIATIONS[group.discipline] : '-'}
         </TableCell>
-        <TableCell>{formatDate(targetStartDateVal)}</TableCell>
-        <TableCell>{formatDate(actualStartDateVal)}</TableCell>
-        <TableCell>{formatDate(targetDate)}</TableCell>
-        <TableCell>{formatDate(actualDate)}</TableCell>
-        <TableCell className={getExplanationColor(explanation)}>{explanation}</TableCell>
-        <TableCell>
+        <TableCell className="whitespace-nowrap">{formatDate(targetStartDateVal)}</TableCell>
+        <TableCell className="whitespace-nowrap">{formatDate(actualStartDateVal)}</TableCell>
+        <TableCell className="whitespace-nowrap">{formatDate(targetDate)}</TableCell>
+        <TableCell className="whitespace-nowrap">{formatDate(actualDate)}</TableCell>
+        <TableCell className={`whitespace-nowrap ${getExplanationColor(explanation)}`}>{explanation}</TableCell>
+        <TableCell className="whitespace-nowrap">
           {item.approval_status === 'Denied with Comment' ? (
             <button
               onClick={() => {
@@ -706,8 +706,8 @@ export default function Area2DocumentTracking() {
             </span>
           )}
         </TableCell>
-        <TableCell>
-          <div className="flex gap-1 flex-wrap">
+        <TableCell className="whitespace-nowrap">
+          <div className="flex gap-1">
             <Button variant="ghost" size="sm" onClick={() => openFileDialog(item)} title="Download/Upload Files">
               <FolderOpen className="h-4 w-4" />
             </Button>
@@ -827,11 +827,11 @@ export default function Area2DocumentTracking() {
                   Add Data
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-md max-h-[85vh] flex flex-col">
                 <DialogHeader>
                   <DialogTitle>Add Monitoring Data</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4">
+                <div className="space-y-4 overflow-y-auto flex-1 pr-2">
                   <div>
                     <Label htmlFor="field">Field</Label>
                     <Select value={field} onValueChange={(value: FieldType) => setField(value)}>
@@ -1175,20 +1175,20 @@ export default function Area2DocumentTracking() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Field</TableHead>
-                <TableHead>Doc Number</TableHead>
-                <TableHead>File Name</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>PIC</TableHead>
-                <TableHead>DISC</TableHead>
-                <TableHead>Target Start</TableHead>
-                <TableHead>Actual Start</TableHead>
-                <TableHead>Target Submit</TableHead>
-                <TableHead>Actual Submit</TableHead>
-                <TableHead>Submit Status</TableHead>
-                <TableHead>Approval</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="whitespace-nowrap">Field</TableHead>
+                <TableHead className="whitespace-nowrap">Doc Number</TableHead>
+                <TableHead className="whitespace-nowrap min-w-[200px]">File Name</TableHead>
+                <TableHead className="whitespace-nowrap">Category</TableHead>
+                <TableHead className="whitespace-nowrap">Status</TableHead>
+                <TableHead className="whitespace-nowrap">PIC</TableHead>
+                <TableHead className="whitespace-nowrap">DISC</TableHead>
+                <TableHead className="whitespace-nowrap">Target Start</TableHead>
+                <TableHead className="whitespace-nowrap">Actual Start</TableHead>
+                <TableHead className="whitespace-nowrap">Target Submit</TableHead>
+                <TableHead className="whitespace-nowrap">Actual Submit</TableHead>
+                <TableHead className="whitespace-nowrap">Submit Status</TableHead>
+                <TableHead className="whitespace-nowrap">Approval</TableHead>
+                <TableHead className="whitespace-nowrap">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

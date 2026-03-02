@@ -1,0 +1,1 @@
+ALTER TABLE prabumulih_projects ADD COLUMN field text DEFAULT 'Prabumulih';

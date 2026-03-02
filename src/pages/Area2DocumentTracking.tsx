@@ -67,6 +67,7 @@ interface MonitoringData {
 interface Project {
   id: string;
   project_name: string;
+  field?: string;
 }
 
 export default function Area2DocumentTracking() {
@@ -116,6 +117,11 @@ export default function Area2DocumentTracking() {
   const [fieldFilterOpen, setFieldFilterOpen] = useState(false);
   const [fileDialogOpen, setFileDialogOpen] = useState(false);
   const [fileDialogItem, setFileDialogItem] = useState<MonitoringData | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [projectFilter, setProjectFilter] = useState<string>('all');
+  const [addProjectDialogOpen, setAddProjectDialogOpen] = useState(false);
+  const [newProjectField, setNewProjectField] = useState<FieldType>('Prabumulih');
+  const [newProjectName, setNewProjectName] = useState('');
   const openFileDialog = (item: MonitoringData) => {
     setFileDialogItem(item);
     setFileDialogOpen(true);
@@ -138,6 +144,7 @@ export default function Area2DocumentTracking() {
         return newFilter;
       });
     }
+    setProjectFilter('all');
   };
 
   useEffect(() => {
@@ -145,7 +152,42 @@ export default function Area2DocumentTracking() {
     fetchUserRole();
     fetchMonitoringData();
     fetchExistingPics();
+    fetchProjects();
   }, [user]);
+
+  const fetchProjects = async () => {
+    const { data, error } = await supabase
+      .from('prabumulih_projects')
+      .select('id, project_name, field')
+      .order('project_name', { ascending: true });
+    if (!error && data) {
+      setProjects(data as Project[]);
+    }
+  };
+
+  const handleAddProject = async () => {
+    if (!newProjectName.trim()) {
+      toast.error('Project name is required');
+      return;
+    }
+    if (!user) return;
+    const { error } = await supabase
+      .from('prabumulih_projects')
+      .insert({
+        project_name: newProjectName.trim(),
+        field: newProjectField,
+        created_by: user.id,
+      });
+    if (error) {
+      toast.error('Failed to add project');
+    } else {
+      toast.success('Project added successfully');
+      setAddProjectDialogOpen(false);
+      setNewProjectName('');
+      setNewProjectField('Prabumulih');
+      fetchProjects();
+    }
+  };
 
   const fetchProject = async () => {
     const { data, error } = await supabase
@@ -579,9 +621,15 @@ export default function Area2DocumentTracking() {
     });
   };
 
+  const filteredProjects = projects.filter(p => 
+    fieldFilter.includes('all') || fieldFilter.includes(p.field || 'Prabumulih')
+  );
+
   const groupedData = monitoringData.reduce((acc, item) => {
     const fieldMatch = fieldFilter.includes('all') || fieldFilter.includes(item.field);
     if (!fieldMatch) return acc;
+    const projectMatch = projectFilter === 'all' || item.project_id === projectFilter;
+    if (!projectMatch) return acc;
     const picMatch = picFilter === 'all' || item.pic === picFilter;
     if (!picMatch) return acc;
     if (!acc[item.file_name]) {
@@ -797,6 +845,20 @@ export default function Area2DocumentTracking() {
           </Popover>
         </div>
         <div className="w-full sm:w-auto">
+          <Label>Filter by Project Name</Label>
+          <Select value={projectFilter} onValueChange={setProjectFilter}>
+            <SelectTrigger className="w-full sm:w-[200px]">
+              <SelectValue placeholder="All Projects" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Projects</SelectItem>
+              {filteredProjects.map((p) => (
+                <SelectItem key={p.id} value={p.id}>{p.project_name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="w-full sm:w-auto">
           <Label>Filter by Status Category</Label>
           <Select value={statusCategoryFilter} onValueChange={(value: 'ALL' | 'IFR' | 'IFA' | 'IFB') => setStatusCategoryFilter(value)}>
             <SelectTrigger className="w-full sm:w-[180px]">
@@ -886,6 +948,41 @@ export default function Area2DocumentTracking() {
             </div>
           </DialogContent>
         </Dialog>
+        {canAddNew && (
+          <Dialog open={addProjectDialogOpen} onOpenChange={setAddProjectDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Project
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md max-h-[85vh] flex flex-col">
+              <DialogHeader>
+                <DialogTitle>Add New Project</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 overflow-y-auto flex-1 pr-2">
+                <div>
+                  <Label>Field</Label>
+                  <Select value={newProjectField} onValueChange={(value: FieldType) => setNewProjectField(value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select field" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Limau">Limau</SelectItem>
+                      <SelectItem value="OK - RT">OK - RT</SelectItem>
+                      <SelectItem value="Prabumulih">Prabumulih</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Project Name</Label>
+                  <Input value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} placeholder="Enter project name" />
+                </div>
+                <Button onClick={handleAddProject} className="w-full">Add Project</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
         {canAddNew && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>

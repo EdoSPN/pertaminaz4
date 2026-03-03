@@ -1,55 +1,42 @@
 
 
-## Plan: Add Project Management and Project Name Filter
+## Plan: Project Name Integration in Area 2 Document Tracking
 
 ### Overview
-Add an "Add Project" button, a project creation form, and a "Project Name" filter that depends on the Field filter selection.
+Three changes: (1) Show "No Project" and hide table when a field has no projects, (2) Add "Project Name" form field in Add Data dialog, (3) Add "Project Name" column in the table.
 
-### Database Change
+### Changes in `src/pages/Area2DocumentTracking.tsx`
 
-Add a `field` column to `prabumulih_projects` table to associate projects with a field (Limau, OK-RT, Prabumulih):
+#### 1. Project Name Filter -- "No Project" when empty
+- Update the Project Name filter: when `filteredProjects` is empty, force the filter value to show "No Project" and disable the dropdown
+- When no projects exist for the selected field(s), the table should show the "No monitoring data found" message (already happens if projectFilter doesn't match any data, but we need to explicitly set projectFilter to a non-matching value)
+- In the `useEffect` or inline logic: if `filteredProjects.length === 0`, set `projectFilter` to `'no_project'` so nothing matches
 
-```sql
-ALTER TABLE prabumulih_projects ADD COLUMN field text DEFAULT 'Prabumulih';
-```
+#### 2. Add "Project Name" dropdown in Add Data dialog
+- Add new state `addDataProjectId` for the selected project in the Add Data form
+- Add a `<Select>` labeled "Project Name" between "Field" and "File Name" in the Add Data dialog
+- The dropdown options should be filtered by the currently selected `field` value in the form
+- On submit (`handleAddNew`), use `addDataProjectId` as `project_id` instead of the hardcoded `PROJECT_ID`
+- Reset `addDataProjectId` after successful submission
 
-Update existing projects' field values as needed (default to 'Prabumulih').
+#### 3. Add "Project Name" column in table
+- In `groupedData` reduction, store `project_id` on each group
+- Look up project name from `projects` array using `project_id`
+- Add `<TableHead>Project Name</TableHead>` between "Field" and "Doc Number" in both the main table header (line 1123) and in `renderDataRows` (line 718)
+- Add corresponding `<TableCell>` showing the project name
 
-### UI Changes in `src/pages/Area2DocumentTracking.tsx`
-
-#### 1. Add Project Dialog
-- New "Add Project" button placed between "Data Recap" and "Add Data" in the action buttons row
-- Pop-up form with two fields:
-  - **Field**: Dropdown select (Limau, OK - RT, Prabumulih)
-  - **Project Name**: Text input for manual typing
-- On submit: inserts into `prabumulih_projects` with `field` and `project_name`, using current user as `created_by`
-- Dialog is scrollable and styled consistently with Add Data dialog
-
-#### 2. Project Name Filter
-- New filter dropdown placed between "Filter by Field" and "Filter by Status Category"
-- Shows "All Projects" by default
-- **Dependent on Field filter**: only displays projects whose `field` matches the currently selected field(s)
-- When a project is selected, table data filters to only show rows with that `project_id`
-
-#### 3. State & Data Changes
-- New state: `projects` (all projects list), `projectFilter` (selected project ID or 'all'), `addProjectDialogOpen`, `newProjectField`, `newProjectName`
-- Fetch all projects from `prabumulih_projects` on mount
-- Compute `filteredProjects` based on current field filter selection
-- Update `groupedData` filtering to also check `project_id` when a project is selected
-- The monitoring data's `project_id` links rows to projects
-
-#### 4. Flow
-```text
-Field Filter → filters Project Name dropdown options
-Project Name Filter → filters table rows by project_id
-```
+#### 4. Also add Project Name in Data Recap table
+- Add "Project Name" column between "Field" and "Doc Number" in the recap table header and rows
 
 ### Summary
 
 | Area | Change |
 |------|--------|
-| Database | Add `field` column to `prabumulih_projects` |
-| Action buttons row | Add "Add Project" button + dialog between Data Recap and Add Data |
-| Filter row | Add "Project Name" filter between Field and Status Category |
-| Data filtering | Filter projects by selected field(s), filter table by selected project |
+| Project Name filter | Show "No Project" & empty table when no projects exist for selected field(s) |
+| Add Data dialog | New "Project Name" select between Field and File Name, filtered by selected field |
+| Main table | New "Project Name" column between Field and Doc Number |
+| Data Recap table | New "Project Name" column between Field and Doc Number |
+| `handleAddNew` | Use selected project ID instead of hardcoded `PROJECT_ID` |
+
+No database changes needed.
 

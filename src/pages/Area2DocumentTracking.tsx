@@ -122,6 +122,7 @@ export default function Area2DocumentTracking() {
   const [addProjectDialogOpen, setAddProjectDialogOpen] = useState(false);
   const [newProjectField, setNewProjectField] = useState<FieldType>('Prabumulih');
   const [newProjectName, setNewProjectName] = useState('');
+  const [addDataProjectId, setAddDataProjectId] = useState<string>('');
   const openFileDialog = (item: MonitoringData) => {
     setFileDialogItem(item);
     setFileDialogOpen(true);
@@ -207,7 +208,6 @@ export default function Area2DocumentTracking() {
     const { data, error } = await supabase
       .from('prabumulih_monitoring_data')
       .select('pic')
-      .eq('project_id', PROJECT_ID)
       .not('pic', 'is', null);
 
     if (!error && data) {
@@ -229,7 +229,6 @@ export default function Area2DocumentTracking() {
     const { data, error } = await supabase
       .from('prabumulih_monitoring_data')
       .select('*')
-      .eq('project_id', PROJECT_ID)
       .order('created_at', { ascending: true });
     
     if (error) {
@@ -397,7 +396,7 @@ export default function Area2DocumentTracking() {
       .from('prabumulih_monitoring_data')
       .update(commonUpdates)
       .eq('file_name', originalFileName)
-      .eq('project_id', PROJECT_ID);
+      .eq('project_id', currentEditItem.project_id);
     if (!error) {
       const categoryUpdate: Record<string, unknown> = {};
       if (currentEditItem.status_category === 'IFR') {
@@ -415,7 +414,7 @@ export default function Area2DocumentTracking() {
         .update(categoryUpdate)
         .eq('file_name', validation.data.file_name)
         .eq('status_category', currentEditItem.status_category)
-        .eq('project_id', PROJECT_ID);
+        .eq('project_id', currentEditItem.project_id);
       if (categoryError) {
         toast.error('Failed to save target date');
         return;
@@ -473,8 +472,7 @@ export default function Area2DocumentTracking() {
     const { error } = await supabase
       .from('prabumulih_monitoring_data')
       .delete()
-      .eq('file_name', fileName)
-      .eq('project_id', PROJECT_ID);
+      .eq('file_name', fileName);
     if (error) {
       toast.error('Failed to delete data');
     } else {
@@ -495,6 +493,11 @@ export default function Area2DocumentTracking() {
       return;
     }
 
+    if (!addDataProjectId) {
+      toast.error('Please select a project');
+      return;
+    }
+
     if (pic.trim() && !existingPics.includes(pic.trim())) {
       if (userRole !== 'admin' && userRole !== 'reviewer') {
         toast.error('Only Admin and Reviewer can add new PIC names');
@@ -505,7 +508,7 @@ export default function Area2DocumentTracking() {
       .from('prabumulih_monitoring_data')
       .insert([
         {
-          project_id: PROJECT_ID,
+          project_id: addDataProjectId,
           field: field,
           file_name: validation.data.file_name,
           document_number: validation.data.document_number,
@@ -520,7 +523,7 @@ export default function Area2DocumentTracking() {
           target_submit_ifb: targetSubmitDateIFB ? targetSubmitDateIFB.toISOString() : null,
         },
         {
-          project_id: PROJECT_ID,
+          project_id: addDataProjectId,
           field: field,
           file_name: validation.data.file_name,
           document_number: validation.data.document_number,
@@ -535,7 +538,7 @@ export default function Area2DocumentTracking() {
           target_submit_ifb: targetSubmitDateIFB ? targetSubmitDateIFB.toISOString() : null,
         },
         {
-          project_id: PROJECT_ID,
+          project_id: addDataProjectId,
           field: field,
           file_name: validation.data.file_name,
           document_number: validation.data.document_number,
@@ -559,6 +562,7 @@ export default function Area2DocumentTracking() {
       setFileName('');
       setDocumentNumber('');
       setField('Prabumulih');
+      setAddDataProjectId('');
       setDiscipline(null);
       setTargetStartDate(undefined);
       setTargetStartDateIFA(undefined);
@@ -596,6 +600,7 @@ export default function Area2DocumentTracking() {
           file_name: item.file_name,
           pic: item.pic,
           discipline: item.discipline,
+          project_name: projects.find(p => p.id === item.project_id)?.project_name || '-',
           status_ifr: 'Not Yet' as string,
           status_ifa: 'Not Yet' as string,
           status_ifb: 'Not Yet' as string,
@@ -611,7 +616,7 @@ export default function Area2DocumentTracking() {
         acc[item.file_name].status_ifb = item.status_description_ifb || 'Not Yet';
       }
       return acc;
-    }, {} as Record<string, { field: string; document_number: string | null; file_name: string; pic: string | null; discipline: DisciplineType | null; status_ifr: string; status_ifa: string; status_ifb: string }>);
+    }, {} as Record<string, { field: string; document_number: string | null; file_name: string; pic: string | null; discipline: DisciplineType | null; project_name: string; status_ifr: string; status_ifa: string; status_ifb: string }>);
 
     return Object.values(recapGroups).sort((a, b) => {
       const picA = (a.pic || '').toLowerCase();
@@ -624,6 +629,17 @@ export default function Area2DocumentTracking() {
   const filteredProjects = projects.filter(p => 
     fieldFilter.includes('all') || fieldFilter.includes(p.field || 'Prabumulih')
   );
+
+  // When no projects exist for selected field(s), force "no_project"
+  useEffect(() => {
+    if (filteredProjects.length === 0) {
+      setProjectFilter('no_project');
+    } else if (projectFilter === 'no_project') {
+      setProjectFilter('all');
+    }
+  }, [filteredProjects.length]);
+
+  const addDataFilteredProjects = projects.filter(p => p.field === field);
 
   const groupedData = monitoringData.reduce((acc, item) => {
     const fieldMatch = fieldFilter.includes('all') || fieldFilter.includes(item.field);
@@ -639,6 +655,7 @@ export default function Area2DocumentTracking() {
         document_number: item.document_number,
         pic: item.pic,
         discipline: item.discipline,
+        project_id: item.project_id,
         id: item.id,
         ifr: null as MonitoringData | null,
         ifa: null as MonitoringData | null,
@@ -649,7 +666,7 @@ export default function Area2DocumentTracking() {
     if (item.status_category === 'IFA') acc[item.file_name].ifa = item;
     if (item.status_category === 'IFB') acc[item.file_name].ifb = item;
     return acc;
-  }, {} as Record<string, { field: string; file_name: string; document_number: string | null; pic: string | null; discipline: DisciplineType | null; id: string; ifr: MonitoringData | null; ifa: MonitoringData | null; ifb: MonitoringData | null }>);
+  }, {} as Record<string, { field: string; file_name: string; document_number: string | null; pic: string | null; discipline: DisciplineType | null; project_id: string; id: string; ifr: MonitoringData | null; ifa: MonitoringData | null; ifb: MonitoringData | null }>);
 
   const sortedGroupedData = Object.values(groupedData).sort((a, b) => {
     const picA = (a.pic || '').toLowerCase();
@@ -685,7 +702,7 @@ export default function Area2DocumentTracking() {
     }
   };
 
-  const renderDataRows = (item: MonitoringData, group: { field: string; file_name: string; document_number: string | null; pic: string | null; discipline: DisciplineType | null; ifr: MonitoringData | null; ifa: MonitoringData | null; ifb: MonitoringData | null }, bgClass: string) => {
+  const renderDataRows = (item: MonitoringData, group: { field: string; file_name: string; document_number: string | null; pic: string | null; discipline: DisciplineType | null; project_id: string; ifr: MonitoringData | null; ifa: MonitoringData | null; ifb: MonitoringData | null }, bgClass: string) => {
     const statusDesc = item.status_category === 'IFR' 
       ? item.status_description_ifr 
       : item.status_category === 'IFA' 
@@ -716,6 +733,7 @@ export default function Area2DocumentTracking() {
     return (
       <TableRow key={item.id} className={bgClass}>
         <TableCell className="whitespace-nowrap">{group.field || 'Prabumulih'}</TableCell>
+        <TableCell className="whitespace-nowrap">{projects.find(p => p.id === group.project_id)?.project_name || '-'}</TableCell>
         <TableCell className="whitespace-nowrap">{group.document_number || '-'}</TableCell>
         <TableCell className="whitespace-nowrap">{group.file_name}</TableCell>
         <TableCell className="whitespace-nowrap">{item.status_category}</TableCell>
@@ -846,15 +864,25 @@ export default function Area2DocumentTracking() {
         </div>
         <div className="w-full sm:w-auto">
           <Label>Filter by Project Name</Label>
-          <Select value={projectFilter} onValueChange={setProjectFilter}>
+          <Select 
+            value={filteredProjects.length === 0 ? 'no_project' : projectFilter} 
+            onValueChange={setProjectFilter}
+            disabled={filteredProjects.length === 0}
+          >
             <SelectTrigger className="w-full sm:w-[200px]">
               <SelectValue placeholder="All Projects" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Projects</SelectItem>
-              {filteredProjects.map((p) => (
-                <SelectItem key={p.id} value={p.id}>{p.project_name}</SelectItem>
-              ))}
+              {filteredProjects.length === 0 ? (
+                <SelectItem value="no_project">No Project</SelectItem>
+              ) : (
+                <>
+                  <SelectItem value="all">All Projects</SelectItem>
+                  {filteredProjects.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.project_name}</SelectItem>
+                  ))}
+                </>
+              )}
             </SelectContent>
           </Select>
         </div>
@@ -906,6 +934,7 @@ export default function Area2DocumentTracking() {
                   <TableRow>
                     <TableHead>No</TableHead>
                     <TableHead>Field</TableHead>
+                    <TableHead>Project Name</TableHead>
                     <TableHead>Doc Number</TableHead>
                     <TableHead>File Name</TableHead>
                     <TableHead>PIC</TableHead>
@@ -920,6 +949,7 @@ export default function Area2DocumentTracking() {
                     <TableRow key={item.file_name}>
                       <TableCell>{index + 1}</TableCell>
                       <TableCell>{item.field || 'Prabumulih'}</TableCell>
+                      <TableCell>{item.project_name || '-'}</TableCell>
                       <TableCell>{item.document_number || '-'}</TableCell>
                       <TableCell>{item.file_name}</TableCell>
                       <TableCell>{item.pic || '-'}</TableCell>
@@ -1006,6 +1036,19 @@ export default function Area2DocumentTracking() {
                       <SelectItem value="Limau">Limau</SelectItem>
                       <SelectItem value="OK - RT">OK - RT</SelectItem>
                       <SelectItem value="Prabumulih">Prabumulih</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Project Name</Label>
+                  <Select value={addDataProjectId} onValueChange={setAddDataProjectId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select project" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {addDataFilteredProjects.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.project_name}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -1121,6 +1164,7 @@ export default function Area2DocumentTracking() {
             <TableHeader>
               <TableRow>
                 <TableHead className="whitespace-nowrap">Field</TableHead>
+                <TableHead className="whitespace-nowrap">Project Name</TableHead>
                 <TableHead className="whitespace-nowrap">Doc Number</TableHead>
                 <TableHead className="whitespace-nowrap min-w-[200px]">File Name</TableHead>
                 <TableHead className="whitespace-nowrap">Category</TableHead>

@@ -1,42 +1,29 @@
 
 
-## Plan: Project Name Integration in Area 2 Document Tracking
+## Plan: Fix Project Name Sync and Header Overflow
 
-### Overview
-Three changes: (1) Show "No Project" and hide table when a field has no projects, (2) Add "Project Name" form field in Add Data dialog, (3) Add "Project Name" column in the table.
+### 1. Fix: New project immediately available in Add Data form
 
-### Changes in `src/pages/Area2DocumentTracking.tsx`
+**Problem:** After adding a new project, `fetchProjects()` is called, which updates the `projects` state. The `addDataFilteredProjects` derived value (line 642) already filters by `field`, so newly added projects should appear. However, if the Add Data dialog was already open or the `field` value in the form doesn't match the new project's field, it won't show.
 
-#### 1. Project Name Filter -- "No Project" when empty
-- Update the Project Name filter: when `filteredProjects` is empty, force the filter value to show "No Project" and disable the dropdown
-- When no projects exist for the selected field(s), the table should show the "No monitoring data found" message (already happens if projectFilter doesn't match any data, but we need to explicitly set projectFilter to a non-matching value)
-- In the `useEffect` or inline logic: if `filteredProjects.length === 0`, set `projectFilter` to `'no_project'` so nothing matches
+**Fix:** The `handleAddProject` function (line 169) already calls `fetchProjects()` on success. This should work. But to ensure the Add Data project dropdown always reflects the latest projects, also reset `addDataProjectId` when `field` changes in the Add Data form (so stale selections are cleared). No additional fetch needed — `addDataFilteredProjects` is already a derived value that recalculates on every render.
 
-#### 2. Add "Project Name" dropdown in Add Data dialog
-- Add new state `addDataProjectId` for the selected project in the Add Data form
-- Add a `<Select>` labeled "Project Name" between "Field" and "File Name" in the Add Data dialog
-- The dropdown options should be filtered by the currently selected `field` value in the form
-- On submit (`handleAddNew`), use `addDataProjectId` as `project_id` instead of the hardcoded `PROJECT_ID`
-- Reset `addDataProjectId` after successful submission
+If there's a real issue with projects not showing up, it could be a timing/state issue. Will verify the flow works correctly — `fetchProjects` → `setProjects` → `addDataFilteredProjects` recomputes. This chain is correct, so the fix is minimal: just ensure the project list updates propagate.
 
-#### 3. Add "Project Name" column in table
-- In `groupedData` reduction, store `project_id` on each group
-- Look up project name from `projects` array using `project_id`
-- Add `<TableHead>Project Name</TableHead>` between "Field" and "Doc Number" in both the main table header (line 1123) and in `renderDataRows` (line 718)
-- Add corresponding `<TableCell>` showing the project name
+### 2. Fix: Header with sidebar trigger not overflowing when table scrolls
 
-#### 4. Also add Project Name in Data Recap table
-- Add "Project Name" column between "Field" and "Doc Number" in the recap table header and rows
+**Problem:** The `header` in `AppLayout` (App.tsx line 30) uses `sticky top-0 z-10`, but when the table in Area2DocumentTracking has `overflow-x-auto` (line 1162), horizontal scrolling on the table can cause the header's sidebar trigger button to visually overlap or get pushed by the sidebar.
 
-### Summary
+**Fix in `src/App.tsx` (line 30):** The header needs a higher `z-index` than the sidebar and should not be affected by horizontal scroll. The table's horizontal scroll container is inside `main`, which is a sibling of `header`. The real issue is likely the header not having a proper stacking context relative to the sidebar.
 
-| Area | Change |
+Change the header to use `z-40` (higher than sidebar's default z-index) to ensure it stays above the sidebar overlay, and add `px-0` with proper left padding to prevent the trigger from shifting.
+
+### Summary of changes
+
+| File | Change |
 |------|--------|
-| Project Name filter | Show "No Project" & empty table when no projects exist for selected field(s) |
-| Add Data dialog | New "Project Name" select between Field and File Name, filtered by selected field |
-| Main table | New "Project Name" column between Field and Doc Number |
-| Data Recap table | New "Project Name" column between Field and Doc Number |
-| `handleAddNew` | Use selected project ID instead of hardcoded `PROJECT_ID` |
+| `src/App.tsx` line 30 | Increase header `z-index` to `z-40` to stay above sidebar; ensure proper isolation |
+| `src/pages/Area2DocumentTracking.tsx` | Reset `addDataProjectId` when `field` changes in Add Data form via a `useEffect`; ensure `handleAddProject` triggers re-render of project dropdown |
 
-No database changes needed.
+Both files, minimal edits.
 

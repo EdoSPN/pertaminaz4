@@ -639,6 +639,11 @@ export default function Area2DocumentTracking() {
     }
   }, [filteredProjects.length]);
 
+  // Reset addDataProjectId when field changes in Add Data form
+  useEffect(() => {
+    setAddDataProjectId('');
+  }, [field]);
+
   const addDataFilteredProjects = projects.filter(p => p.field === field);
 
   const groupedData = monitoringData.reduce((acc, item) => {

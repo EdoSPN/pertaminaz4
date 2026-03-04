@@ -644,7 +644,7 @@ export default function Area2DocumentTracking() {
     setAddDataProjectId('');
   }, [field]);
 
-  const addDataFilteredProjects = projects.filter(p => p.field === field);
+  const addDataFilteredProjects = filteredProjects;
 
   const groupedData = monitoringData.reduce((acc, item) => {
     const fieldMatch = fieldFilter.includes('all') || fieldFilter.includes(item.field);

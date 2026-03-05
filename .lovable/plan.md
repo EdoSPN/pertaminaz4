@@ -1,90 +1,86 @@
 
 
-## Plan: Enhanced Data Recap with Project Selection and Horizontal Scroll
+## Plan: Add Edit/Delete Project Features to Add Project Dialog
 
 ### Overview
-Three changes to the Data Recap dialog: (1) two-step view -- first show project list, then show filtered recap data, (2) make all table data single-line with horizontal scrolling, (3) add option to view all recap data.
+Enhance the "Add Project" dialog to also list existing projects with inline edit and delete capabilities, respecting role-based permissions:
+- **Delete**: Admin only
+- **Edit project name**: All roles except Viewer (i.e., admin, reviewer, user, approver)
+- **Add new project**: Remains admin and reviewer only (existing `canAddNew` logic)
 
 ### Changes in `src/pages/Area2DocumentTracking.tsx`
 
-#### 1. New state for Data Recap project selection
-- Add `recapSelectedProject` state (`string | null`, default `null`)
-- When dialog opens, reset `recapSelectedProject` to `null` (show project list)
-- When dialog closes, reset to `null`
+#### 1. New state variables
+- `editingProjectId` (`string | null`) -- tracks which project is being edited inline
+- `editingProjectName` (`string`) -- the edited name value
+- `deleteProjectConfirmId` (`string | null`) -- tracks which project delete confirmation is open
 
-#### 2. Data Recap dialog -- two-step UI
+#### 2. New handler functions
 
-**Step 1 -- Project list view** (when `recapSelectedProject === null`):
-- Show a list of project names from `filteredProjects` as clickable cards/buttons
-- Add a "View All" button/option to show all data across all projects
-- Clicking a project sets `recapSelectedProject` to that project's id
-- Clicking "View All" sets `recapSelectedProject` to `'all'`
+**`handleEditProject`**: Updates project name in `prabumulih_projects` table, then calls `fetchProjects()`. Only allowed if role is not viewer (no viewer role exists in the enum, so effectively all authenticated roles can edit).
 
-**Step 2 -- Recap table view** (when `recapSelectedProject` is set):
-- Show a back button to return to project list
-- Show the project name as subtitle (or "All Projects")
-- Filter `getRecapData()` by selected project (or show all if `'all'`)
-- Display the table with horizontal scroll
+**`handleDeleteProject`**: Deletes project from `prabumulih_projects` table. Only allowed for admin. Uses AlertDialog for confirmation since deletion is destructive.
 
-#### 3. Table formatting -- single line and horizontal scroll
-- Add `whitespace-nowrap` to all `TableCell` and `TableHead` elements in the recap table
-- Wrap the table in a `div` with `overflow-x-auto` so it scrolls horizontally
-- Remove `overflow-auto` from `DialogContent` and instead scope it to the table container
+#### 3. Updated dialog UI
 
-#### 4. Updated `getRecapData` 
-- Add optional `projectId` parameter to filter by project
-- When `projectId` is provided (and not `'all'`), filter `monitoringData` to only that project's items before grouping
+The "Add Project" dialog title changes to "Manage Projects". Inside:
+- **Top section**: Keep existing "Add New Project" form (field select + project name input + add button) -- only shown if `canAddNew`
+- **Bottom section**: Scrollable list of existing projects grouped or listed simply, each showing:
+  - Project name (text or input if editing)
+  - Field badge/label
+  - Edit button (pencil icon) -- visible for all roles except viewer
+  - Delete button (trash icon) -- visible for admin only
+  - Save/Cancel buttons when in edit mode
 
-### Code sketch
+#### 4. Permission logic
+```typescript
+const canEditProject = userRole === 'admin' || userRole === 'reviewer' || userRole === 'user' || userRole === 'approver';
+const canDeleteProject = userRole === 'admin';
+```
+
+The dialog trigger button visibility stays as `canAddNew` OR we broaden it so users who can edit/delete can also see the button. Since all roles except viewer should access it, change the condition:
 
 ```typescript
-// New state
-const [recapSelectedProject, setRecapSelectedProject] = useState<string | null>(null);
-
-// Reset on dialog open/close
-onOpenChange={(open) => {
-  setRecapDialogOpen(open);
-  if (!open) setRecapSelectedProject(null);
-}}
-
-// Inside DialogContent:
-{recapSelectedProject === null ? (
-  // Project selection view
-  <div className="space-y-3 mt-4">
-    <Button variant="outline" className="w-full" onClick={() => setRecapSelectedProject('all')}>
-      View All Projects
-    </Button>
-    {filteredProjects.map(p => (
-      <Button key={p.id} variant="outline" className="w-full justify-start"
-        onClick={() => setRecapSelectedProject(p.id)}>
-        {p.project_name}
+{(canAddNew || canEditProject) && (
+  <Dialog ...>
+    <DialogTrigger>
+      <Button variant="outline">
+        <FolderOpen /> Manage Projects
       </Button>
-    ))}
-  </div>
-) : (
-  // Recap table view
-  <div>
-    <Button variant="ghost" size="sm" onClick={() => setRecapSelectedProject(null)}>
-      ← Back to Projects
-    </Button>
-    <div className="overflow-x-auto mt-2">
-      <Table>
-        {/* whitespace-nowrap on all cells */}
-      </Table>
-    </div>
-  </div>
+    </DialogTrigger>
+    ...
+  </Dialog>
 )}
+```
+
+#### 5. Dialog layout sketch
+```
+┌─────────────────────────────┐
+│ Manage Projects             │
+├─────────────────────────────┤
+│ [Add New Project section]   │  ← only if canAddNew
+│  Field: [Select]            │
+│  Name: [Input]              │
+│  [Add Project]              │
+├─────────────────────────────┤
+│ Existing Projects           │
+│ ┌─────────────────────────┐ │
+│ │ Project A  (Limau) ✏️🗑️│ │
+│ │ Project B  (OK-RT) ✏️🗑️│ │
+│ │ Project C  (Prabu) ✏️   │ │  ← non-admin: no delete
+│ └─────────────────────────┘ │
+└─────────────────────────────┘
 ```
 
 ### Summary
 
 | Change | Detail |
 |--------|--------|
-| New state | `recapSelectedProject` to track selected project in recap |
-| Dialog flow | First shows project list, then filtered table on click |
-| "View All" option | Shows all recap data across all projects |
-| Table formatting | `whitespace-nowrap` on all cells, `overflow-x-auto` wrapper for horizontal scroll |
-| Back navigation | Button to return from table view to project list |
+| New state | `editingProjectId`, `editingProjectName`, `deleteProjectConfirmId` |
+| New handlers | `handleEditProject`, `handleDeleteProject` |
+| Permission vars | `canEditProject` (all except viewer), `canDeleteProject` (admin only) |
+| Dialog UI | Rename to "Manage Projects", add project list with edit/delete actions |
+| Button visibility | Show for `canAddNew || canEditProject` |
 
-Single file change: `src/pages/Area2DocumentTracking.tsx`
+Single file: `src/pages/Area2DocumentTracking.tsx`
 

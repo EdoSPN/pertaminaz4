@@ -104,6 +104,7 @@ export default function Area2DocumentTracking() {
   const [documentNumber, setDocumentNumber] = useState('');
   const [editDocumentNumber, setEditDocumentNumber] = useState('');
   const [recapDialogOpen, setRecapDialogOpen] = useState(false);
+  const [recapSelectedProject, setRecapSelectedProject] = useState<string | null>(null);
   const [field, setField] = useState<FieldType>('Prabumulih');
   const [editField, setEditField] = useState<FieldType>('Prabumulih');
   const [discipline, setDiscipline] = useState<DisciplineType | null>(null);
@@ -591,8 +592,11 @@ export default function Area2DocumentTracking() {
     return 'Ahead';
   };
 
-  const getRecapData = () => {
-    const recapGroups = monitoringData.reduce((acc, item) => {
+  const getRecapData = (projectId?: string) => {
+    const sourceData = projectId && projectId !== 'all'
+      ? monitoringData.filter(item => item.project_id === projectId)
+      : monitoringData;
+    const recapGroups = sourceData.reduce((acc, item) => {
       if (!acc[item.file_name]) {
         acc[item.file_name] = {
           field: item.field || 'Prabumulih',
@@ -922,65 +926,96 @@ export default function Area2DocumentTracking() {
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Dialog open={recapDialogOpen} onOpenChange={setRecapDialogOpen}>
+        <Dialog open={recapDialogOpen} onOpenChange={(open) => {
+          setRecapDialogOpen(open);
+          if (!open) setRecapSelectedProject(null);
+        }}>
           <DialogTrigger asChild>
             <Button variant="outline">
               <Printer className="h-4 w-4 mr-2" />
               Data Recap
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
             <DialogHeader>
               <DialogTitle>Data Recap - Area 2 Document Tracking</DialogTitle>
             </DialogHeader>
-            <div className="mt-4">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>No</TableHead>
-                    <TableHead>Field</TableHead>
-                    <TableHead>Project Name</TableHead>
-                    <TableHead>Doc Number</TableHead>
-                    <TableHead>File Name</TableHead>
-                    <TableHead>PIC</TableHead>
-                    <TableHead>DISC</TableHead>
-                    <TableHead>IFR</TableHead>
-                    <TableHead>IFA</TableHead>
-                    <TableHead>IFB</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {getRecapData().map((item, index) => (
-                    <TableRow key={item.file_name}>
-                      <TableCell>{index + 1}</TableCell>
-                      <TableCell>{item.field || 'Prabumulih'}</TableCell>
-                      <TableCell>{item.project_name || '-'}</TableCell>
-                      <TableCell>{item.document_number || '-'}</TableCell>
-                      <TableCell>{item.file_name}</TableCell>
-                      <TableCell>{item.pic || '-'}</TableCell>
-                      <TableCell>
-                        {item.discipline ? DISCIPLINE_ABBREVIATIONS[item.discipline as DisciplineType] : '-'}
-                      </TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(item.status_ifr)}`}>
-                          {item.status_ifr}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(item.status_ifa)}`}>
-                          {item.status_ifa}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(item.status_ifb)}`}>
-                          {item.status_ifb}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            {recapSelectedProject === null ? (
+              <div className="space-y-2 mt-4 overflow-auto flex-1">
+                <Button variant="outline" className="w-full justify-start font-semibold" onClick={() => setRecapSelectedProject('all')}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  View All Projects
+                </Button>
+                {filteredProjects.map(p => (
+                  <Button key={p.id} variant="outline" className="w-full justify-start"
+                    onClick={() => setRecapSelectedProject(p.id)}>
+                    <FolderOpen className="h-4 w-4 mr-2" />
+                    {p.project_name}
+                  </Button>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col flex-1 overflow-hidden mt-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <Button variant="ghost" size="sm" onClick={() => setRecapSelectedProject(null)}>
+                    ← Back to Projects
+                  </Button>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {recapSelectedProject === 'all' ? 'All Projects' : filteredProjects.find(p => p.id === recapSelectedProject)?.project_name || ''}
+                  </span>
+                </div>
+                <div className="overflow-auto flex-1">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="whitespace-nowrap">No</TableHead>
+                          <TableHead className="whitespace-nowrap">Field</TableHead>
+                          <TableHead className="whitespace-nowrap">Project Name</TableHead>
+                          <TableHead className="whitespace-nowrap">Doc Number</TableHead>
+                          <TableHead className="whitespace-nowrap">File Name</TableHead>
+                          <TableHead className="whitespace-nowrap">PIC</TableHead>
+                          <TableHead className="whitespace-nowrap">DISC</TableHead>
+                          <TableHead className="whitespace-nowrap">IFR</TableHead>
+                          <TableHead className="whitespace-nowrap">IFA</TableHead>
+                          <TableHead className="whitespace-nowrap">IFB</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {getRecapData(recapSelectedProject).map((item, index) => (
+                          <TableRow key={item.file_name}>
+                            <TableCell className="whitespace-nowrap">{index + 1}</TableCell>
+                            <TableCell className="whitespace-nowrap">{item.field || 'Prabumulih'}</TableCell>
+                            <TableCell className="whitespace-nowrap">{item.project_name || '-'}</TableCell>
+                            <TableCell className="whitespace-nowrap">{item.document_number || '-'}</TableCell>
+                            <TableCell className="whitespace-nowrap">{item.file_name}</TableCell>
+                            <TableCell className="whitespace-nowrap">{item.pic || '-'}</TableCell>
+                            <TableCell className="whitespace-nowrap">
+                              {item.discipline ? DISCIPLINE_ABBREVIATIONS[item.discipline as DisciplineType] : '-'}
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap">
+                              <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(item.status_ifr)}`}>
+                                {item.status_ifr}
+                              </span>
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap">
+                              <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(item.status_ifa)}`}>
+                                {item.status_ifa}
+                              </span>
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap">
+                              <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(item.status_ifb)}`}>
+                                {item.status_ifb}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
         {canAddNew && (

@@ -1,51 +1,90 @@
 
 
-## Plan: Fix Project List Sync and Header Scroll Issue
+## Plan: Enhanced Data Recap with Project Selection and Horizontal Scroll
 
-### Issue 1: Project list mismatch between Add Data form and Project Name filter
+### Overview
+Three changes to the Data Recap dialog: (1) two-step view -- first show project list, then show filtered recap data, (2) make all table data single-line with horizontal scrolling, (3) add option to view all recap data.
 
-**Root cause:** The filter dropdown uses `filteredProjects` which filters by the multi-select `fieldFilter` array:
+### Changes in `src/pages/Area2DocumentTracking.tsx`
+
+#### 1. New state for Data Recap project selection
+- Add `recapSelectedProject` state (`string | null`, default `null`)
+- When dialog opens, reset `recapSelectedProject` to `null` (show project list)
+- When dialog closes, reset to `null`
+
+#### 2. Data Recap dialog -- two-step UI
+
+**Step 1 -- Project list view** (when `recapSelectedProject === null`):
+- Show a list of project names from `filteredProjects` as clickable cards/buttons
+- Add a "View All" button/option to show all data across all projects
+- Clicking a project sets `recapSelectedProject` to that project's id
+- Clicking "View All" sets `recapSelectedProject` to `'all'`
+
+**Step 2 -- Recap table view** (when `recapSelectedProject` is set):
+- Show a back button to return to project list
+- Show the project name as subtitle (or "All Projects")
+- Filter `getRecapData()` by selected project (or show all if `'all'`)
+- Display the table with horizontal scroll
+
+#### 3. Table formatting -- single line and horizontal scroll
+- Add `whitespace-nowrap` to all `TableCell` and `TableHead` elements in the recap table
+- Wrap the table in a `div` with `overflow-x-auto` so it scrolls horizontally
+- Remove `overflow-auto` from `DialogContent` and instead scope it to the table container
+
+#### 4. Updated `getRecapData` 
+- Add optional `projectId` parameter to filter by project
+- When `projectId` is provided (and not `'all'`), filter `monitoringData` to only that project's items before grouping
+
+### Code sketch
+
 ```typescript
-const filteredProjects = projects.filter(p =>
-  fieldFilter.includes('all') || fieldFilter.includes(p.field || 'Prabumulih')
-);
+// New state
+const [recapSelectedProject, setRecapSelectedProject] = useState<string | null>(null);
+
+// Reset on dialog open/close
+onOpenChange={(open) => {
+  setRecapDialogOpen(open);
+  if (!open) setRecapSelectedProject(null);
+}}
+
+// Inside DialogContent:
+{recapSelectedProject === null ? (
+  // Project selection view
+  <div className="space-y-3 mt-4">
+    <Button variant="outline" className="w-full" onClick={() => setRecapSelectedProject('all')}>
+      View All Projects
+    </Button>
+    {filteredProjects.map(p => (
+      <Button key={p.id} variant="outline" className="w-full justify-start"
+        onClick={() => setRecapSelectedProject(p.id)}>
+        {p.project_name}
+      </Button>
+    ))}
+  </div>
+) : (
+  // Recap table view
+  <div>
+    <Button variant="ghost" size="sm" onClick={() => setRecapSelectedProject(null)}>
+      ← Back to Projects
+    </Button>
+    <div className="overflow-x-auto mt-2">
+      <Table>
+        {/* whitespace-nowrap on all cells */}
+      </Table>
+    </div>
+  </div>
+)}
 ```
-
-But the Add Data form uses `addDataFilteredProjects` which filters by the single `field` state (the form's field value):
-```typescript
-const addDataFilteredProjects = projects.filter(p => p.field === field);
-```
-
-These use different filter sources, so they show different project lists.
-
-**Fix in `src/pages/Area2DocumentTracking.tsx`:** Change `addDataFilteredProjects` to use the same filtering logic as `filteredProjects` — filter by the currently selected `fieldFilter` values, not the `field` form state. This ensures both the filter dropdown and the Add Data form show the same project list.
-
-```typescript
-const addDataFilteredProjects = filteredProjects;
-```
-
-### Issue 2: Header not staying fixed during horizontal table scroll
-
-**Root cause:** The `z-40` fix alone doesn't solve the horizontal scroll issue. The real problem is that the `flex-1` container holding header + main has no width constraint. When the table inside `main` overflows horizontally, the entire `flex-1` div expands, pushing the header wider too — so the header scrolls with the content.
-
-**Fix in `src/App.tsx`:** Add `min-w-0 overflow-hidden` to the `flex-1` container div. This constrains it to the available width, so the table's `overflow-x-auto` only affects the table's own container, not the header.
-
-```tsx
-<div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-  <header className="sticky top-0 z-40 ...">...</header>
-  <main className="flex-1 p-3 md:p-6 overflow-auto">
-    {children}
-  </main>
-</div>
-```
-
-The `main` element needs `overflow-auto` so it becomes the scrollable area, keeping the header isolated.
 
 ### Summary
 
-| File | Change |
-|------|--------|
-| `src/pages/Area2DocumentTracking.tsx` line 647 | Change `addDataFilteredProjects` to use `filteredProjects` instead of filtering by `field` |
-| `src/App.tsx` line 29 | Add `min-w-0 overflow-hidden` to flex-1 container |
-| `src/App.tsx` line 34 | Add `overflow-auto` to main element |
+| Change | Detail |
+|--------|--------|
+| New state | `recapSelectedProject` to track selected project in recap |
+| Dialog flow | First shows project list, then filtered table on click |
+| "View All" option | Shows all recap data across all projects |
+| Table formatting | `whitespace-nowrap` on all cells, `overflow-x-auto` wrapper for horizontal scroll |
+| Back navigation | Button to return from table view to project list |
+
+Single file change: `src/pages/Area2DocumentTracking.tsx`
 

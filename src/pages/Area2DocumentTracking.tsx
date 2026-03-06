@@ -124,6 +124,9 @@ export default function Area2DocumentTracking() {
   const [newProjectField, setNewProjectField] = useState<FieldType>('Prabumulih');
   const [newProjectName, setNewProjectName] = useState('');
   const [addDataProjectId, setAddDataProjectId] = useState<string>('');
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [editingProjectName, setEditingProjectName] = useState('');
+  const [deleteProjectConfirmId, setDeleteProjectConfirmId] = useState<string | null>(null);
   const openFileDialog = (item: MonitoringData) => {
     setFileDialogItem(item);
     setFileDialogOpen(true);
@@ -191,6 +194,39 @@ export default function Area2DocumentTracking() {
     }
   };
 
+  const handleEditProject = async (id: string) => {
+    if (!editingProjectName.trim()) {
+      toast.error('Project name is required');
+      return;
+    }
+    const { error } = await supabase
+      .from('prabumulih_projects')
+      .update({ project_name: editingProjectName.trim() })
+      .eq('id', id);
+    if (error) {
+      toast.error('Failed to update project name');
+    } else {
+      toast.success('Project name updated');
+      setEditingProjectId(null);
+      setEditingProjectName('');
+      fetchProjects();
+    }
+  };
+
+  const handleDeleteProject = async (id: string) => {
+    const { error } = await supabase
+      .from('prabumulih_projects')
+      .delete()
+      .eq('id', id);
+    if (error) {
+      toast.error('Failed to delete project');
+    } else {
+      toast.success('Project deleted');
+      setDeleteProjectConfirmId(null);
+      fetchProjects();
+    }
+  };
+
   const fetchProject = async () => {
     const { data, error } = await supabase
       .from('prabumulih_projects')
@@ -250,6 +286,8 @@ export default function Area2DocumentTracking() {
   const canEditFileInfo = userRole === 'admin' || userRole === 'reviewer';
   const canApprove = userRole === 'admin' || userRole === 'approver';
   const isAdmin = userRole === 'admin';
+  const canEditProject = userRole === 'admin' || userRole === 'reviewer' || userRole === 'user' || userRole === 'approver';
+  const canDeleteProject = userRole === 'admin';
 
   const handleOpenEditDialog = (item: MonitoringData) => {
     setCurrentEditItem(item);
@@ -1018,37 +1056,119 @@ export default function Area2DocumentTracking() {
             )}
           </DialogContent>
         </Dialog>
-        {canAddNew && (
-          <Dialog open={addProjectDialogOpen} onOpenChange={setAddProjectDialogOpen}>
+        {(canAddNew || canEditProject) && (
+          <Dialog open={addProjectDialogOpen} onOpenChange={(open) => {
+            setAddProjectDialogOpen(open);
+            if (!open) {
+              setEditingProjectId(null);
+              setEditingProjectName('');
+              setDeleteProjectConfirmId(null);
+            }
+          }}>
             <DialogTrigger asChild>
               <Button variant="outline">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Project
+                <FolderOpen className="h-4 w-4 mr-2" />
+                Manage Projects
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md max-h-[85vh] flex flex-col">
               <DialogHeader>
-                <DialogTitle>Add New Project</DialogTitle>
+                <DialogTitle>Manage Projects</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 overflow-y-auto flex-1 pr-2">
-                <div>
-                  <Label>Field</Label>
-                  <Select value={newProjectField} onValueChange={(value: FieldType) => setNewProjectField(value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select field" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Limau">Limau</SelectItem>
-                      <SelectItem value="OK - RT">OK - RT</SelectItem>
-                      <SelectItem value="Prabumulih">Prabumulih</SelectItem>
-                    </SelectContent>
-                  </Select>
+                {canAddNew && (
+                  <div className="space-y-3 border-b pb-4">
+                    <Label className="text-sm font-semibold">Add New Project</Label>
+                    <div>
+                      <Label className="text-xs">Field</Label>
+                      <Select value={newProjectField} onValueChange={(value: FieldType) => setNewProjectField(value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select field" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Limau">Limau</SelectItem>
+                          <SelectItem value="OK - RT">OK - RT</SelectItem>
+                          <SelectItem value="Prabumulih">Prabumulih</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Project Name</Label>
+                      <Input value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} placeholder="Enter project name" />
+                    </div>
+                    <Button onClick={handleAddProject} className="w-full" size="sm">
+                      <Plus className="h-4 w-4 mr-1" /> Add Project
+                    </Button>
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Existing Projects</Label>
+                  {projects.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No projects yet.</p>
+                  ) : (
+                    <div className="space-y-1">
+                      {projects.map((p) => (
+                        <div key={p.id} className="flex items-center gap-2 p-2 rounded-md border bg-muted/30">
+                          {editingProjectId === p.id ? (
+                            <>
+                              <Input
+                                value={editingProjectName}
+                                onChange={(e) => setEditingProjectName(e.target.value)}
+                                className="h-8 flex-1"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleEditProject(p.id);
+                                  if (e.key === 'Escape') { setEditingProjectId(null); setEditingProjectName(''); }
+                                }}
+                              />
+                              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleEditProject(p.id)}>
+                                <Check className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditingProjectId(null); setEditingProjectName(''); }}>
+                                <span className="text-xs">✕</span>
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <div className="flex-1 min-w-0">
+                                <span className="text-sm truncate block">{p.project_name}</span>
+                                <span className="text-xs text-muted-foreground">{p.field || 'Prabumulih'}</span>
+                              </div>
+                              {canEditProject && (
+                                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditingProjectId(p.id); setEditingProjectName(p.project_name); }}>
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                              {canDeleteProject && (
+                                <AlertDialog open={deleteProjectConfirmId === p.id} onOpenChange={(open) => setDeleteProjectConfirmId(open ? p.id : null)}>
+                                  <AlertDialogTrigger asChild>
+                                    <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive">
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete Project</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to delete "{p.project_name}"? This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => handleDeleteProject(p.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <Label>Project Name</Label>
-                  <Input value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} placeholder="Enter project name" />
-                </div>
-                <Button onClick={handleAddProject} className="w-full">Add Project</Button>
               </div>
             </DialogContent>
           </Dialog>

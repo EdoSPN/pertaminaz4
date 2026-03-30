@@ -1,86 +1,51 @@
 
 
-## Plan: Add Edit/Delete Project Features to Add Project Dialog
+## Plan: Add "A1" and "A2" Text Icons for Collapsed Sidebar
 
 ### Overview
-Enhance the "Add Project" dialog to also list existing projects with inline edit and delete capabilities, respecting role-based permissions:
-- **Delete**: Admin only
-- **Edit project name**: All roles except Viewer (i.e., admin, reviewer, user, approver)
-- **Add new project**: Remains admin and reviewer only (existing `canAddNew` logic)
+When the sidebar is collapsed, the nested Document Tracking sub-items (Area 1 and Area 2) are hidden. Show them as top-level icon-only menu items with text badges "A1" and "A2" when collapsed.
 
-### Changes in `src/pages/Area2DocumentTracking.tsx`
+### Changes in `src/components/AppSidebar.tsx`
 
-#### 1. New state variables
-- `editingProjectId` (`string | null`) -- tracks which project is being edited inline
-- `editingProjectName` (`string`) -- the edited name value
-- `deleteProjectConfirmId` (`string | null`) -- tracks which project delete confirmation is open
+When `collapsed` is true, instead of rendering the nested collapsible structure for Document Tracking, render two simple `SidebarMenuItem` entries:
 
-#### 2. New handler functions
+- **A1** -- links to the first Area 1 sub-item (e.g., `/monitoring/adera`) with a small styled `<span>` showing "A1" as the icon
+- **A2** -- links to `/area2/document-tracking` with a `<span>` showing "A2"
 
-**`handleEditProject`**: Updates project name in `prabumulih_projects` table, then calls `fetchProjects()`. Only allowed if role is not viewer (no viewer role exists in the enum, so effectively all authenticated roles can edit).
+The text icons will be styled as small bold text spans (`h-4 w-4 flex items-center justify-center text-xs font-bold`) to visually match the Lucide icon size.
 
-**`handleDeleteProject`**: Deletes project from `prabumulih_projects` table. Only allowed for admin. Uses AlertDialog for confirmation since deletion is destructive.
+When the sidebar is expanded, the existing nested collapsible structure remains unchanged.
 
-#### 3. Updated dialog UI
+#### Code approach
 
-The "Add Project" dialog title changes to "Manage Projects". Inside:
-- **Top section**: Keep existing "Add New Project" form (field select + project name input + add button) -- only shown if `canAddNew`
-- **Bottom section**: Scrollable list of existing projects grouped or listed simply, each showing:
-  - Project name (text or input if editing)
-  - Field badge/label
-  - Edit button (pencil icon) -- visible for all roles except viewer
-  - Delete button (trash icon) -- visible for admin only
-  - Save/Cancel buttons when in edit mode
-
-#### 4. Permission logic
-```typescript
-const canEditProject = userRole === 'admin' || userRole === 'reviewer' || userRole === 'user' || userRole === 'approver';
-const canDeleteProject = userRole === 'admin';
-```
-
-The dialog trigger button visibility stays as `canAddNew` OR we broaden it so users who can edit/delete can also see the button. Since all roles except viewer should access it, change the condition:
+Inside the `item.isNested` branch (line 102), wrap the existing collapsible in `{!collapsed && (...)}` and add:
 
 ```typescript
-{(canAddNew || canEditProject) && (
-  <Dialog ...>
-    <DialogTrigger>
-      <Button variant="outline">
-        <FolderOpen /> Manage Projects
-      </Button>
-    </DialogTrigger>
-    ...
-  </Dialog>
+{collapsed && (
+  <>
+    <SidebarMenuItem>
+      <SidebarMenuButton asChild isActive={location.pathname.startsWith('/monitoring/')}>
+        <NavLink to="/monitoring/adera" className="flex items-center justify-center">
+          <span className="h-4 w-4 flex items-center justify-center text-xs font-bold">A1</span>
+        </NavLink>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+    <SidebarMenuItem>
+      <SidebarMenuButton asChild isActive={isActive('/area2/document-tracking')}>
+        <NavLink to="/area2/document-tracking" className="flex items-center justify-center">
+          <span className="h-4 w-4 flex items-center justify-center text-xs font-bold">A2</span>
+        </NavLink>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  </>
 )}
-```
-
-#### 5. Dialog layout sketch
-```
-┌─────────────────────────────┐
-│ Manage Projects             │
-├─────────────────────────────┤
-│ [Add New Project section]   │  ← only if canAddNew
-│  Field: [Select]            │
-│  Name: [Input]              │
-│  [Add Project]              │
-├─────────────────────────────┤
-│ Existing Projects           │
-│ ┌─────────────────────────┐ │
-│ │ Project A  (Limau) ✏️🗑️│ │
-│ │ Project B  (OK-RT) ✏️🗑️│ │
-│ │ Project C  (Prabu) ✏️   │ │  ← non-admin: no delete
-│ └─────────────────────────┘ │
-└─────────────────────────────┘
 ```
 
 ### Summary
 
-| Change | Detail |
-|--------|--------|
-| New state | `editingProjectId`, `editingProjectName`, `deleteProjectConfirmId` |
-| New handlers | `handleEditProject`, `handleDeleteProject` |
-| Permission vars | `canEditProject` (all except viewer), `canDeleteProject` (admin only) |
-| Dialog UI | Rename to "Manage Projects", add project list with edit/delete actions |
-| Button visibility | Show for `canAddNew || canEditProject` |
+| File | Change |
+|------|--------|
+| `src/components/AppSidebar.tsx` | Show "A1" and "A2" as clickable icon items when sidebar is collapsed; keep existing nested structure when expanded |
 
-Single file: `src/pages/Area2DocumentTracking.tsx`
+Single file change. No database changes.
 

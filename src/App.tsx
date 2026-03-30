@@ -22,6 +22,18 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+const AreaBadge = () => {
+  const location = useLocation();
+  const isArea1 = location.pathname.startsWith('/monitoring/');
+  const isArea2 = location.pathname.startsWith('/area2/');
+  if (!isArea1 && !isArea2) return null;
+  return (
+    <span className="inline-flex items-center justify-center h-7 w-7 rounded-md bg-primary text-primary-foreground text-xs font-bold shrink-0">
+      {isArea1 ? 'A1' : 'A2'}
+    </span>
+  );
+};
+
 const AppLayout = ({ children }: { children: React.ReactNode }) => (
   <SidebarProvider>
     <div className="flex min-h-screen w-full">
@@ -29,6 +41,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => (
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header className="sticky top-0 z-40 flex h-14 md:h-16 items-center gap-2 md:gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
           <SidebarTrigger className="hover:bg-muted/50 transition-colors ml-3 md:ml-6" />
+          <AreaBadge />
           <div className="flex-1" />
         </header>
         <main className="flex-1 p-3 md:p-6 overflow-auto">

@@ -9,7 +9,7 @@ import {
   Monitor,
   ChevronRight
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Sidebar,
   SidebarContent,
@@ -100,62 +100,78 @@ export function AppSidebar() {
             <SidebarMenu>
               {visibleMenuItems.map((item) => (
                 item.isNested ? (
-                  // Document Tracking with nested structure
-                  <Collapsible key={item.title} open={openDocTracking} onOpenChange={setOpenDocTracking} className="group/collapsible">
-                    <SidebarMenuItem>
-                      <CollapsibleTrigger asChild>
-                        <SidebarMenuButton className="flex items-center gap-3">
-                          <item.icon className="h-4 w-4" />
-                          {!collapsed && <span>{item.title}</span>}
-                          {!collapsed && (
-                            <ChevronRight className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-90" />
-                          )}
+                  collapsed ? (
+                    <React.Fragment key={item.title}>
+                      <SidebarMenuItem>
+                        <SidebarMenuButton asChild isActive={location.pathname.startsWith('/monitoring/')}>
+                          <NavLink to="/monitoring/adera" className="flex items-center justify-center">
+                            <span className="h-4 w-4 flex items-center justify-center text-xs font-bold">A1</span>
+                          </NavLink>
                         </SidebarMenuButton>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <SidebarMenuSub>
-                          {documentTrackingItems.map((area) => (
-                            <Collapsible 
-                              key={area.title} 
-                              open={openAreas[area.title]} 
-                              onOpenChange={(open) => setOpenAreas(prev => ({ ...prev, [area.title]: open }))} 
-                              className="group/area"
-                            >
-                              <SidebarMenuSubItem>
-                                <CollapsibleTrigger asChild>
-                                  <SidebarMenuSubButton className="flex items-center gap-2">
-                                    {area.title}
-                                    <ChevronRight className="ml-auto h-3 w-3 transition-transform group-data-[state=open]/area:rotate-90" />
-                                  </SidebarMenuSubButton>
-                                </CollapsibleTrigger>
-                              </SidebarMenuSubItem>
-                              <CollapsibleContent>
-                                <SidebarMenuSub>
-                                  {area.items.map((subItem) => (
-                                    <SidebarMenuSubItem key={subItem.title}>
-                                      <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
-                                        <NavLink to={subItem.url}>
-                                          {subItem.title}
-                                        </NavLink>
-                                      </SidebarMenuSubButton>
-                                    </SidebarMenuSubItem>
-                                  ))}
-                                </SidebarMenuSub>
-                              </CollapsibleContent>
-                            </Collapsible>
-                          ))}
-                          {/* Area 2 as direct link */}
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton asChild isActive={isActive(area2Link.url)}>
-                              <NavLink to={area2Link.url}>
-                                {area2Link.title}
-                              </NavLink>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
-                    </SidebarMenuItem>
-                  </Collapsible>
+                      </SidebarMenuItem>
+                      <SidebarMenuItem>
+                        <SidebarMenuButton asChild isActive={isActive('/area2/document-tracking')}>
+                          <NavLink to="/area2/document-tracking" className="flex items-center justify-center">
+                            <span className="h-4 w-4 flex items-center justify-center text-xs font-bold">A2</span>
+                          </NavLink>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    </React.Fragment>
+                  ) : (
+                    <Collapsible key={item.title} open={openDocTracking} onOpenChange={setOpenDocTracking} className="group/collapsible">
+                      <SidebarMenuItem>
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuButton className="flex items-center gap-3">
+                            <item.icon className="h-4 w-4" />
+                            <span>{item.title}</span>
+                            <ChevronRight className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+                          </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <SidebarMenuSub>
+                            {documentTrackingItems.map((area) => (
+                              <Collapsible 
+                                key={area.title} 
+                                open={openAreas[area.title]} 
+                                onOpenChange={(open) => setOpenAreas(prev => ({ ...prev, [area.title]: open }))} 
+                                className="group/area"
+                              >
+                                <SidebarMenuSubItem>
+                                  <CollapsibleTrigger asChild>
+                                    <SidebarMenuSubButton className="flex items-center gap-2">
+                                      {area.title}
+                                      <ChevronRight className="ml-auto h-3 w-3 transition-transform group-data-[state=open]/area:rotate-90" />
+                                    </SidebarMenuSubButton>
+                                  </CollapsibleTrigger>
+                                </SidebarMenuSubItem>
+                                <CollapsibleContent>
+                                  <SidebarMenuSub>
+                                    {area.items.map((subItem) => (
+                                      <SidebarMenuSubItem key={subItem.title}>
+                                        <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
+                                          <NavLink to={subItem.url}>
+                                            {subItem.title}
+                                          </NavLink>
+                                        </SidebarMenuSubButton>
+                                      </SidebarMenuSubItem>
+                                    ))}
+                                  </SidebarMenuSub>
+                                </CollapsibleContent>
+                              </Collapsible>
+                            ))}
+                            {/* Area 2 as direct link */}
+                            <SidebarMenuSubItem>
+                              <SidebarMenuSubButton asChild isActive={isActive(area2Link.url)}>
+                                <NavLink to={area2Link.url}>
+                                  {area2Link.title}
+                                </NavLink>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      </SidebarMenuItem>
+                    </Collapsible>
+                  )
                 ) : (
                   // Regular menu item
                   <SidebarMenuItem key={item.title}>

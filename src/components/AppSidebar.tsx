@@ -39,30 +39,12 @@ const menuItems = [
   { title: 'User Management', url: '/users', icon: Shield, adminOnly: true },
 ].sort((a, b) => a.title.localeCompare(b.title));
 
-type MenuItem = { title: string; url: string };
-type AreaItem = { title: string; items: MenuItem[] };
-
-const documentTrackingItems: AreaItem[] = [
-  { 
-    title: 'Area 1', 
-    items: [
-      { title: 'Adera', url: '/monitoring/adera' },
-      { title: 'Pendopo', url: '/monitoring/pendopo' },
-      { title: 'Ramba', url: '/monitoring/ramba' }
-    ].sort((a, b) => a.title.localeCompare(b.title))
-  },
-];
-
-// Area 2 is now a direct link, not a nested menu
-const area2Link = { title: 'Area 2', url: '/area2/document-tracking' };
-
 export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
   const { signOut, user } = useAuth();
   const [userRole, setUserRole] = useState<string>('');
   const [openDocTracking, setOpenDocTracking] = useState(true);
-  const [openAreas, setOpenAreas] = useState<Record<string, boolean>>({ 'Area 1': true });
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -103,8 +85,8 @@ export function AppSidebar() {
                   collapsed ? (
                     <React.Fragment key={item.title}>
                       <SidebarMenuItem>
-                        <SidebarMenuButton asChild isActive={location.pathname.startsWith('/monitoring/')}>
-                          <NavLink to="/monitoring/adera" className="flex items-center justify-center">
+                        <SidebarMenuButton asChild isActive={isActive('/area1/document-tracking')}>
+                          <NavLink to="/area1/document-tracking" className="flex items-center justify-center">
                             <span className="h-4 w-4 flex items-center justify-center text-xs font-bold">A1</span>
                           </NavLink>
                         </SidebarMenuButton>
@@ -129,41 +111,17 @@ export function AppSidebar() {
                         </CollapsibleTrigger>
                         <CollapsibleContent>
                           <SidebarMenuSub>
-                            {documentTrackingItems.map((area) => (
-                              <Collapsible 
-                                key={area.title} 
-                                open={openAreas[area.title]} 
-                                onOpenChange={(open) => setOpenAreas(prev => ({ ...prev, [area.title]: open }))} 
-                                className="group/area"
-                              >
-                                <SidebarMenuSubItem>
-                                  <CollapsibleTrigger asChild>
-                                    <SidebarMenuSubButton className="flex items-center gap-2">
-                                      {area.title}
-                                      <ChevronRight className="ml-auto h-3 w-3 transition-transform group-data-[state=open]/area:rotate-90" />
-                                    </SidebarMenuSubButton>
-                                  </CollapsibleTrigger>
-                                </SidebarMenuSubItem>
-                                <CollapsibleContent>
-                                  <SidebarMenuSub>
-                                    {area.items.map((subItem) => (
-                                      <SidebarMenuSubItem key={subItem.title}>
-                                        <SidebarMenuSubButton asChild isActive={isActive(subItem.url)}>
-                                          <NavLink to={subItem.url}>
-                                            {subItem.title}
-                                          </NavLink>
-                                        </SidebarMenuSubButton>
-                                      </SidebarMenuSubItem>
-                                    ))}
-                                  </SidebarMenuSub>
-                                </CollapsibleContent>
-                              </Collapsible>
-                            ))}
-                            {/* Area 2 as direct link */}
                             <SidebarMenuSubItem>
-                              <SidebarMenuSubButton asChild isActive={isActive(area2Link.url)}>
-                                <NavLink to={area2Link.url}>
-                                  {area2Link.title}
+                              <SidebarMenuSubButton asChild isActive={isActive('/area1/document-tracking')}>
+                                <NavLink to="/area1/document-tracking">
+                                  Area 1
+                                </NavLink>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                            <SidebarMenuSubItem>
+                              <SidebarMenuSubButton asChild isActive={isActive('/area2/document-tracking')}>
+                                <NavLink to="/area2/document-tracking">
+                                  Area 2
                                 </NavLink>
                               </SidebarMenuSubButton>
                             </SidebarMenuSubItem>
@@ -173,7 +131,6 @@ export function AppSidebar() {
                     </Collapsible>
                   )
                 ) : (
-                  // Regular menu item
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild isActive={isActive(item.url)}>
                       <NavLink to={item.url} className="flex items-center gap-3">

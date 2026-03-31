@@ -14,6 +14,108 @@ export type Database = {
   }
   public: {
     Tables: {
+      area1_monitoring_data: {
+        Row: {
+          actual_start_ifa: string | null
+          actual_start_ifb: string | null
+          actual_start_ifr: string | null
+          actual_submit_ifa: string | null
+          actual_submit_ifb: string | null
+          actual_submit_ifr: string | null
+          approval_comment: string | null
+          approval_status: Database["public"]["Enums"]["approval_status"]
+          created_at: string | null
+          discipline: string | null
+          document_number: string | null
+          field: string | null
+          file_name: string
+          id: string
+          status_category: Database["public"]["Enums"]["status_category"]
+          status_description_ifa:
+            | Database["public"]["Enums"]["status_description"]
+            | null
+          status_description_ifb:
+            | Database["public"]["Enums"]["status_description"]
+            | null
+          status_description_ifr:
+            | Database["public"]["Enums"]["status_description"]
+            | null
+          target_start_ifa: string | null
+          target_start_ifb: string | null
+          target_start_ifr: string | null
+          target_submit_ifa: string | null
+          target_submit_ifb: string | null
+          target_submit_ifr: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          actual_start_ifa?: string | null
+          actual_start_ifb?: string | null
+          actual_start_ifr?: string | null
+          actual_submit_ifa?: string | null
+          actual_submit_ifb?: string | null
+          actual_submit_ifr?: string | null
+          approval_comment?: string | null
+          approval_status?: Database["public"]["Enums"]["approval_status"]
+          created_at?: string | null
+          discipline?: string | null
+          document_number?: string | null
+          field?: string | null
+          file_name: string
+          id?: string
+          status_category?: Database["public"]["Enums"]["status_category"]
+          status_description_ifa?:
+            | Database["public"]["Enums"]["status_description"]
+            | null
+          status_description_ifb?:
+            | Database["public"]["Enums"]["status_description"]
+            | null
+          status_description_ifr?:
+            | Database["public"]["Enums"]["status_description"]
+            | null
+          target_start_ifa?: string | null
+          target_start_ifb?: string | null
+          target_start_ifr?: string | null
+          target_submit_ifa?: string | null
+          target_submit_ifb?: string | null
+          target_submit_ifr?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          actual_start_ifa?: string | null
+          actual_start_ifb?: string | null
+          actual_start_ifr?: string | null
+          actual_submit_ifa?: string | null
+          actual_submit_ifb?: string | null
+          actual_submit_ifr?: string | null
+          approval_comment?: string | null
+          approval_status?: Database["public"]["Enums"]["approval_status"]
+          created_at?: string | null
+          discipline?: string | null
+          document_number?: string | null
+          field?: string | null
+          file_name?: string
+          id?: string
+          status_category?: Database["public"]["Enums"]["status_category"]
+          status_description_ifa?:
+            | Database["public"]["Enums"]["status_description"]
+            | null
+          status_description_ifb?:
+            | Database["public"]["Enums"]["status_description"]
+            | null
+          status_description_ifr?:
+            | Database["public"]["Enums"]["status_description"]
+            | null
+          target_start_ifa?: string | null
+          target_start_ifb?: string | null
+          target_start_ifr?: string | null
+          target_submit_ifa?: string | null
+          target_submit_ifb?: string | null
+          target_submit_ifr?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       chart_datasets: {
         Row: {
           chart_type: string | null

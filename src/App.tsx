@@ -16,6 +16,7 @@ import Dashboard from "./pages/Dashboard";
 import PowerBI from "./pages/PowerBI";
 import Calculator from "./pages/Calculator";
 import Repository from "./pages/Repository";
+import Area1DocumentTracking from "./pages/Area1DocumentTracking";
 import Area2DocumentTracking from "./pages/Area2DocumentTracking";
 import UserManagement from "./pages/UserManagement";
 import NotFound from "./pages/NotFound";
@@ -48,6 +49,9 @@ const App = () => (
         <AuthProvider>
           <Routes>
             {/* Backward-compatible redirects */}
+            <Route path="/monitoring/adera" element={<Navigate to="/area1/document-tracking" replace />} />
+            <Route path="/monitoring/pendopo" element={<Navigate to="/area1/document-tracking" replace />} />
+            <Route path="/monitoring/ramba" element={<Navigate to="/area1/document-tracking" replace />} />
             <Route path="/monitoring/ok-rt" element={<Navigate to="/area2/document-tracking" replace />} />
             <Route path="/monitoring/limau" element={<Navigate to="/area2/document-tracking" replace />} />
             <Route path="/monitoring/prabumulih" element={<Navigate to="/area2/document-tracking" replace />} />
@@ -101,6 +105,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AppLayout>
                     <Repository />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/area1/document-tracking"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Area1DocumentTracking />
                   </AppLayout>
                 </ProtectedRoute>
               }

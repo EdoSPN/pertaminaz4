@@ -16,6 +16,7 @@ import Dashboard from "./pages/Dashboard";
 import PowerBI from "./pages/PowerBI";
 import Calculator from "./pages/Calculator";
 import Repository from "./pages/Repository";
+import Area1DocumentTracking from "./pages/Area1DocumentTracking";
 import Area2DocumentTracking from "./pages/Area2DocumentTracking";
 import UserManagement from "./pages/UserManagement";
 import NotFound from "./pages/NotFound";

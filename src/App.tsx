@@ -49,6 +49,9 @@ const App = () => (
         <AuthProvider>
           <Routes>
             {/* Backward-compatible redirects */}
+            <Route path="/monitoring/adera" element={<Navigate to="/area1/document-tracking" replace />} />
+            <Route path="/monitoring/pendopo" element={<Navigate to="/area1/document-tracking" replace />} />
+            <Route path="/monitoring/ramba" element={<Navigate to="/area1/document-tracking" replace />} />
             <Route path="/monitoring/ok-rt" element={<Navigate to="/area2/document-tracking" replace />} />
             <Route path="/monitoring/limau" element={<Navigate to="/area2/document-tracking" replace />} />
             <Route path="/monitoring/prabumulih" element={<Navigate to="/area2/document-tracking" replace />} />

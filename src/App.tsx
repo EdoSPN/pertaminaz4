@@ -110,6 +110,16 @@ const App = () => (
               }
             />
             <Route
+              path="/area1/document-tracking"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Area1DocumentTracking />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/area2/document-tracking"
               element={
                 <ProtectedRoute>

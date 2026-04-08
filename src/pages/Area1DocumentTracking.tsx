@@ -7,13 +7,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Pencil, CalendarIcon, Check, ChevronsUpDown, Trash2, FileText, Printer } from 'lucide-react';
+import { Plus, Pencil, CalendarIcon, Check, ChevronsUpDown, Trash2, FileText, Printer, FolderOpen } from 'lucide-react';
+import { DocumentFilesDialog } from '@/components/DocumentFilesDialog';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { validateMonitoringData } from '@/lib/validation';
@@ -34,6 +36,7 @@ const DISCIPLINE_ABBREVIATIONS: Record<DisciplineType, string> = {
 
 interface MonitoringData {
   id: string;
+  project_id: string;
   field: FieldType;
   file_name: string;
   document_number: string | null;
@@ -41,6 +44,7 @@ interface MonitoringData {
   status_description_ifr: 'Not Yet' | 'Start' | 'In-Progress' | 'Complete';
   status_description_ifa: 'Not Yet' | 'Start' | 'In-Progress' | 'Complete';
   status_description_ifb: 'Not Yet' | 'Start' | 'In-Progress' | 'Complete';
+  pic: string | null;
   discipline: DisciplineType | null;
   target_submit_ifr: string | null;
   target_submit_ifa: string | null;
@@ -58,6 +62,12 @@ interface MonitoringData {
   approval_comment: string | null;
 }
 
+interface Project {
+  id: string;
+  project_name: string;
+  field?: string;
+}
+
 export default function Area1DocumentTracking() {
   const { user } = useAuth();
   const [monitoringData, setMonitoringData] = useState<MonitoringData[]>([]);
@@ -67,24 +77,31 @@ export default function Area1DocumentTracking() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [reviewerEditDialogOpen, setReviewerEditDialogOpen] = useState(false);
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
+  const [pic, setPic] = useState('');
   const [fileName, setFileName] = useState('');
   const [currentEditItem, setCurrentEditItem] = useState<MonitoringData | null>(null);
   const [editStatusDescription, setEditStatusDescription] = useState<'Not Yet' | 'Start' | 'In-Progress' | 'Complete'>('Not Yet');
   const [startTicketConfirmOpen, setStartTicketConfirmOpen] = useState(false);
   const [editActualSubmit, setEditActualSubmit] = useState('');
   const [editFileName, setEditFileName] = useState('');
+  const [editPic, setEditPic] = useState('');
   const [editTargetSubmitDate, setEditTargetSubmitDate] = useState<Date>();
   const [approvalStatus, setApprovalStatus] = useState<'Approved' | 'Denied' | 'Pending' | 'Denied with Comment'>('Pending');
   const [approvalComment, setApprovalComment] = useState('');
   const [commentDialogOpen, setCommentDialogOpen] = useState(false);
   const [commentDialogItem, setCommentDialogItem] = useState<MonitoringData | null>(null);
+  const [picFilter, setPicFilter] = useState<string>('all');
   const [statusCategoryFilter, setStatusCategoryFilter] = useState<'ALL' | 'IFR' | 'IFA' | 'IFB'>('ALL');
   const [targetSubmitDate, setTargetSubmitDate] = useState<Date>();
   const [targetSubmitDateIFA, setTargetSubmitDateIFA] = useState<Date>();
   const [targetSubmitDateIFB, setTargetSubmitDateIFB] = useState<Date>();
+  const [existingPics, setExistingPics] = useState<string[]>([]);
+  const [picComboOpen, setPicComboOpen] = useState(false);
+  const [editPicComboOpen, setEditPicComboOpen] = useState(false);
   const [documentNumber, setDocumentNumber] = useState('');
   const [editDocumentNumber, setEditDocumentNumber] = useState('');
   const [recapDialogOpen, setRecapDialogOpen] = useState(false);
+  const [recapSelectedProject, setRecapSelectedProject] = useState<string | null>(null);
   const [field, setField] = useState<FieldType>('Adera');
   const [editField, setEditField] = useState<FieldType>('Adera');
   const [discipline, setDiscipline] = useState<DisciplineType | null>(null);
@@ -96,6 +113,22 @@ export default function Area1DocumentTracking() {
   const [editActualStartDate, setEditActualStartDate] = useState('');
   const [fieldFilter, setFieldFilter] = useState<string[]>(['all']);
   const [fieldFilterOpen, setFieldFilterOpen] = useState(false);
+  const [fileDialogOpen, setFileDialogOpen] = useState(false);
+  const [fileDialogItem, setFileDialogItem] = useState<MonitoringData | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [projectFilter, setProjectFilter] = useState<string>('all');
+  const [addProjectDialogOpen, setAddProjectDialogOpen] = useState(false);
+  const [newProjectField, setNewProjectField] = useState<FieldType>('Adera');
+  const [newProjectName, setNewProjectName] = useState('');
+  const [addDataProjectId, setAddDataProjectId] = useState<string>('');
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [editingProjectName, setEditingProjectName] = useState('');
+  const [deleteProjectConfirmId, setDeleteProjectConfirmId] = useState<string | null>(null);
+
+  const openFileDialog = (item: MonitoringData) => {
+    setFileDialogItem(item);
+    setFileDialogOpen(true);
+  };
 
   const handleFieldFilterChange = (value: string, checked: boolean | 'indeterminate') => {
     if (value === 'all') {
@@ -114,12 +147,94 @@ export default function Area1DocumentTracking() {
         return newFilter;
       });
     }
+    setProjectFilter('all');
   };
 
   useEffect(() => {
     fetchUserRole();
     fetchMonitoringData();
+    fetchExistingPics();
+    fetchProjects();
   }, [user]);
+
+  const fetchProjects = async () => {
+    const { data, error } = await supabase
+      .from('area1_projects')
+      .select('id, project_name, field')
+      .order('project_name', { ascending: true });
+    if (!error && data) {
+      setProjects(data as Project[]);
+    }
+  };
+
+  const handleAddProject = async () => {
+    if (!newProjectName.trim()) {
+      toast.error('Project name is required');
+      return;
+    }
+    if (!user) return;
+    const { error } = await supabase
+      .from('area1_projects')
+      .insert({
+        project_name: newProjectName.trim(),
+        field: newProjectField,
+        created_by: user.id,
+      });
+    if (error) {
+      toast.error('Failed to add project');
+    } else {
+      toast.success('Project added successfully');
+      setAddProjectDialogOpen(false);
+      setNewProjectName('');
+      setNewProjectField('Adera');
+      fetchProjects();
+    }
+  };
+
+  const handleEditProject = async (id: string) => {
+    if (!editingProjectName.trim()) {
+      toast.error('Project name is required');
+      return;
+    }
+    const { error } = await supabase
+      .from('area1_projects')
+      .update({ project_name: editingProjectName.trim() })
+      .eq('id', id);
+    if (error) {
+      toast.error('Failed to update project name');
+    } else {
+      toast.success('Project name updated');
+      setEditingProjectId(null);
+      setEditingProjectName('');
+      fetchProjects();
+    }
+  };
+
+  const handleDeleteProject = async (id: string) => {
+    const { error } = await supabase
+      .from('area1_projects')
+      .delete()
+      .eq('id', id);
+    if (error) {
+      toast.error('Failed to delete project');
+    } else {
+      toast.success('Project deleted');
+      setDeleteProjectConfirmId(null);
+      fetchProjects();
+    }
+  };
+
+  const fetchExistingPics = async () => {
+    const { data, error } = await supabase
+      .from('area1_monitoring_data')
+      .select('pic')
+      .not('pic', 'is', null);
+
+    if (!error && data) {
+      const uniquePics = Array.from(new Set(data.map(item => item.pic).filter(Boolean))) as string[];
+      setExistingPics(uniquePics.sort());
+    }
+  };
 
   const fetchUserRole = async () => {
     if (!user) return;
@@ -132,17 +247,19 @@ export default function Area1DocumentTracking() {
   const fetchMonitoringData = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('area1_monitoring_data' as any)
+      .from('area1_monitoring_data')
       .select('*')
       .order('created_at', { ascending: true });
     
     if (error) {
       toast.error('Failed to fetch monitoring data');
     } else {
-      const mappedData = (data || []).map((item: any) => ({
+      const mappedData = (data || []).map(item => ({
         ...item,
         field: (item.field || 'Adera') as FieldType,
         discipline: item.discipline as DisciplineType | null,
+        project_id: item.project_id || '',
+        pic: item.pic || null,
       }));
       setMonitoringData(mappedData);
     }
@@ -154,6 +271,8 @@ export default function Area1DocumentTracking() {
   const canEditFileInfo = userRole === 'admin' || userRole === 'reviewer';
   const canApprove = userRole === 'admin' || userRole === 'approver';
   const isAdmin = userRole === 'admin';
+  const canEditProject = userRole === 'admin' || userRole === 'reviewer' || userRole === 'user' || userRole === 'approver';
+  const canDeleteProject = userRole === 'admin';
 
   const handleOpenEditDialog = (item: MonitoringData) => {
     setCurrentEditItem(item);
@@ -181,6 +300,7 @@ export default function Area1DocumentTracking() {
   const handleOpenReviewerEditDialog = (item: MonitoringData) => {
     setCurrentEditItem(item);
     setEditFileName(item.file_name);
+    setEditPic(item.pic || '');
     setEditDocumentNumber(item.document_number || '');
     setEditField(item.field || 'Adera');
     setEditDiscipline(item.discipline || null);
@@ -223,7 +343,7 @@ export default function Area1DocumentTracking() {
     }
 
     const { error } = await supabase
-      .from('area1_monitoring_data' as any)
+      .from('area1_monitoring_data')
       .update(updates)
       .eq('id', currentEditItem.id);
 
@@ -255,7 +375,7 @@ export default function Area1DocumentTracking() {
       updates.actual_submit_ifb = editActualSubmit ? new Date(editActualSubmit).toISOString() : null;
     }
     const { error } = await supabase
-      .from('area1_monitoring_data' as any)
+      .from('area1_monitoring_data')
       .update(updates)
       .eq('id', currentEditItem.id);
     if (error) {
@@ -273,6 +393,7 @@ export default function Area1DocumentTracking() {
     
     const validation = validateMonitoringData({
       file_name: editFileName,
+      pic: editPic.trim() || null,
       document_number: editDocumentNumber.trim() || null,
     });
 
@@ -281,17 +402,25 @@ export default function Area1DocumentTracking() {
       return;
     }
 
+    if (editPic.trim() && !existingPics.includes(editPic.trim())) {
+      if (userRole !== 'admin' && userRole !== 'reviewer') {
+        toast.error('Only Admin and Reviewer can add new PIC names');
+        return;
+      }
+    }
     const originalFileName = currentEditItem.file_name;
     const commonUpdates = {
       file_name: validation.data.file_name,
+      pic: validation.data.pic,
       document_number: validation.data.document_number,
       field: editField,
       discipline: editDiscipline,
     };
     const { error } = await supabase
-      .from('area1_monitoring_data' as any)
+      .from('area1_monitoring_data')
       .update(commonUpdates)
-      .eq('file_name', originalFileName);
+      .eq('file_name', originalFileName)
+      .eq('project_id', currentEditItem.project_id);
     if (!error) {
       const categoryUpdate: Record<string, unknown> = {};
       if (currentEditItem.status_category === 'IFR') {
@@ -305,10 +434,11 @@ export default function Area1DocumentTracking() {
         categoryUpdate.target_submit_ifb = editTargetSubmitDate ? editTargetSubmitDate.toISOString() : null;
       }
       const { error: categoryError } = await supabase
-        .from('area1_monitoring_data' as any)
+        .from('area1_monitoring_data')
         .update(categoryUpdate)
         .eq('file_name', validation.data.file_name)
-        .eq('status_category', currentEditItem.status_category);
+        .eq('status_category', currentEditItem.status_category)
+        .eq('project_id', currentEditItem.project_id);
       if (categoryError) {
         toast.error('Failed to save target date');
         return;
@@ -321,6 +451,7 @@ export default function Area1DocumentTracking() {
       setReviewerEditDialogOpen(false);
       setCurrentEditItem(null);
       fetchMonitoringData();
+      fetchExistingPics();
     }
   };
 
@@ -343,7 +474,7 @@ export default function Area1DocumentTracking() {
     }
 
     const { error } = await supabase
-      .from('area1_monitoring_data' as any)
+      .from('area1_monitoring_data')
       .update({
         approval_status: approvalStatus,
         approval_comment: approvalStatus === 'Denied with Comment' ? validation.data.approval_comment : null,
@@ -362,7 +493,7 @@ export default function Area1DocumentTracking() {
 
   const handleDeleteData = async (fileName: string) => {
     const { error } = await supabase
-      .from('area1_monitoring_data' as any)
+      .from('area1_monitoring_data')
       .delete()
       .eq('file_name', fileName);
     if (error) {
@@ -376,6 +507,7 @@ export default function Area1DocumentTracking() {
   const handleAddNew = async () => {
     const validation = validateMonitoringData({
       file_name: fileName,
+      pic: pic.trim() || null,
       document_number: documentNumber.trim() || null,
     });
 
@@ -384,15 +516,28 @@ export default function Area1DocumentTracking() {
       return;
     }
 
+    if (!addDataProjectId) {
+      toast.error('Please select a project');
+      return;
+    }
+
+    if (pic.trim() && !existingPics.includes(pic.trim())) {
+      if (userRole !== 'admin' && userRole !== 'reviewer') {
+        toast.error('Only Admin and Reviewer can add new PIC names');
+        return;
+      }
+    }
     const { error } = await supabase
-      .from('area1_monitoring_data' as any)
+      .from('area1_monitoring_data')
       .insert([
         {
+          project_id: addDataProjectId,
           field: field,
           file_name: validation.data.file_name,
           document_number: validation.data.document_number,
+          pic: validation.data.pic,
           discipline: discipline,
-          status_category: 'IFR',
+          status_category: 'IFR' as const,
           target_start_ifr: targetStartDate ? targetStartDate.toISOString() : null,
           target_start_ifa: targetStartDateIFA ? targetStartDateIFA.toISOString() : null,
           target_start_ifb: targetStartDateIFB ? targetStartDateIFB.toISOString() : null,
@@ -401,11 +546,13 @@ export default function Area1DocumentTracking() {
           target_submit_ifb: targetSubmitDateIFB ? targetSubmitDateIFB.toISOString() : null,
         },
         {
+          project_id: addDataProjectId,
           field: field,
           file_name: validation.data.file_name,
           document_number: validation.data.document_number,
+          pic: validation.data.pic,
           discipline: discipline,
-          status_category: 'IFA',
+          status_category: 'IFA' as const,
           target_start_ifr: targetStartDate ? targetStartDate.toISOString() : null,
           target_start_ifa: targetStartDateIFA ? targetStartDateIFA.toISOString() : null,
           target_start_ifb: targetStartDateIFB ? targetStartDateIFB.toISOString() : null,
@@ -414,11 +561,13 @@ export default function Area1DocumentTracking() {
           target_submit_ifb: targetSubmitDateIFB ? targetSubmitDateIFB.toISOString() : null,
         },
         {
+          project_id: addDataProjectId,
           field: field,
           file_name: validation.data.file_name,
           document_number: validation.data.document_number,
+          pic: validation.data.pic,
           discipline: discipline,
-          status_category: 'IFB',
+          status_category: 'IFB' as const,
           target_start_ifr: targetStartDate ? targetStartDate.toISOString() : null,
           target_start_ifa: targetStartDateIFA ? targetStartDateIFA.toISOString() : null,
           target_start_ifb: targetStartDateIFB ? targetStartDateIFB.toISOString() : null,
@@ -432,9 +581,11 @@ export default function Area1DocumentTracking() {
     } else {
       toast.success('Monitoring data added successfully');
       setDialogOpen(false);
+      setPic('');
       setFileName('');
       setDocumentNumber('');
       setField('Adera');
+      setAddDataProjectId('');
       setDiscipline(null);
       setTargetStartDate(undefined);
       setTargetStartDateIFA(undefined);
@@ -443,6 +594,7 @@ export default function Area1DocumentTracking() {
       setTargetSubmitDateIFA(undefined);
       setTargetSubmitDateIFB(undefined);
       fetchMonitoringData();
+      fetchExistingPics();
     }
   };
 
@@ -462,37 +614,77 @@ export default function Area1DocumentTracking() {
     return 'Ahead';
   };
 
-  const getRecapData = () => {
-    const recapGroups = monitoringData.reduce((acc, item) => {
+  const getRecapData = (projectId?: string) => {
+    const sourceData = projectId && projectId !== 'all'
+      ? monitoringData.filter(item => item.project_id === projectId)
+      : monitoringData;
+    const recapGroups = sourceData.reduce((acc, item) => {
       if (!acc[item.file_name]) {
         acc[item.file_name] = {
           field: item.field || 'Adera',
           document_number: item.document_number,
           file_name: item.file_name,
+          pic: item.pic,
           discipline: item.discipline,
+          project_name: projects.find(p => p.id === item.project_id)?.project_name || '-',
           status_ifr: 'Not Yet' as string,
           status_ifa: 'Not Yet' as string,
           status_ifb: 'Not Yet' as string,
         };
       }
-      if (item.status_category === 'IFR') acc[item.file_name].status_ifr = item.status_description_ifr || 'Not Yet';
-      if (item.status_category === 'IFA') acc[item.file_name].status_ifa = item.status_description_ifa || 'Not Yet';
-      if (item.status_category === 'IFB') acc[item.file_name].status_ifb = item.status_description_ifb || 'Not Yet';
+      if (item.status_category === 'IFR') {
+        acc[item.file_name].status_ifr = item.status_description_ifr || 'Not Yet';
+      }
+      if (item.status_category === 'IFA') {
+        acc[item.file_name].status_ifa = item.status_description_ifa || 'Not Yet';
+      }
+      if (item.status_category === 'IFB') {
+        acc[item.file_name].status_ifb = item.status_description_ifb || 'Not Yet';
+      }
       return acc;
-    }, {} as Record<string, { field: string; document_number: string | null; file_name: string; discipline: DisciplineType | null; status_ifr: string; status_ifa: string; status_ifb: string }>);
+    }, {} as Record<string, { field: string; document_number: string | null; file_name: string; pic: string | null; discipline: DisciplineType | null; project_name: string; status_ifr: string; status_ifa: string; status_ifb: string }>);
 
-    return Object.values(recapGroups).sort((a, b) => a.file_name.toLowerCase().localeCompare(b.file_name.toLowerCase()));
+    return Object.values(recapGroups).sort((a, b) => {
+      const picA = (a.pic || '').toLowerCase();
+      const picB = (b.pic || '').toLowerCase();
+      if (picA !== picB) return picA.localeCompare(picB);
+      return a.file_name.toLowerCase().localeCompare(b.file_name.toLowerCase());
+    });
   };
+
+  const filteredProjects = projects.filter(p => 
+    fieldFilter.includes('all') || fieldFilter.includes(p.field || 'Adera')
+  );
+
+  useEffect(() => {
+    if (filteredProjects.length === 0) {
+      setProjectFilter('no_project');
+    } else if (projectFilter === 'no_project') {
+      setProjectFilter('all');
+    }
+  }, [filteredProjects.length]);
+
+  useEffect(() => {
+    setAddDataProjectId('');
+  }, [field]);
+
+  const addDataFilteredProjects = filteredProjects;
 
   const groupedData = monitoringData.reduce((acc, item) => {
     const fieldMatch = fieldFilter.includes('all') || fieldFilter.includes(item.field);
     if (!fieldMatch) return acc;
+    const projectMatch = projectFilter === 'all' || item.project_id === projectFilter;
+    if (!projectMatch) return acc;
+    const picMatch = picFilter === 'all' || item.pic === picFilter;
+    if (!picMatch) return acc;
     if (!acc[item.file_name]) {
       acc[item.file_name] = {
         field: item.field || 'Adera',
         file_name: item.file_name,
         document_number: item.document_number,
+        pic: item.pic,
         discipline: item.discipline,
+        project_id: item.project_id,
         id: item.id,
         ifr: null as MonitoringData | null,
         ifa: null as MonitoringData | null,
@@ -503,11 +695,14 @@ export default function Area1DocumentTracking() {
     if (item.status_category === 'IFA') acc[item.file_name].ifa = item;
     if (item.status_category === 'IFB') acc[item.file_name].ifb = item;
     return acc;
-  }, {} as Record<string, { field: string; file_name: string; document_number: string | null; discipline: DisciplineType | null; id: string; ifr: MonitoringData | null; ifa: MonitoringData | null; ifb: MonitoringData | null }>);
+  }, {} as Record<string, { field: string; file_name: string; document_number: string | null; pic: string | null; discipline: DisciplineType | null; project_id: string; id: string; ifr: MonitoringData | null; ifa: MonitoringData | null; ifb: MonitoringData | null }>);
 
-  const sortedGroupedData = Object.values(groupedData).sort((a, b) => 
-    a.file_name.toLowerCase().localeCompare(b.file_name.toLowerCase())
-  );
+  const sortedGroupedData = Object.values(groupedData).sort((a, b) => {
+    const picA = (a.pic || '').toLowerCase();
+    const picB = (b.pic || '').toLowerCase();
+    if (picA !== picB) return picA.localeCompare(picB);
+    return a.file_name.toLowerCase().localeCompare(b.file_name.toLowerCase());
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -536,7 +731,7 @@ export default function Area1DocumentTracking() {
     }
   };
 
-  const renderDataRows = (item: MonitoringData, group: { field: string; file_name: string; document_number: string | null; discipline: DisciplineType | null; ifr: MonitoringData | null; ifa: MonitoringData | null; ifb: MonitoringData | null }, bgClass: string) => {
+  const renderDataRows = (item: MonitoringData, group: { field: string; file_name: string; document_number: string | null; pic: string | null; discipline: DisciplineType | null; project_id: string; ifr: MonitoringData | null; ifa: MonitoringData | null; ifb: MonitoringData | null }, bgClass: string) => {
     const statusDesc = item.status_category === 'IFR' 
       ? item.status_description_ifr 
       : item.status_category === 'IFA' 
@@ -567,6 +762,7 @@ export default function Area1DocumentTracking() {
     return (
       <TableRow key={item.id} className={bgClass}>
         <TableCell className="whitespace-nowrap">{group.field || 'Adera'}</TableCell>
+        <TableCell className="whitespace-nowrap">{projects.find(p => p.id === group.project_id)?.project_name || '-'}</TableCell>
         <TableCell className="whitespace-nowrap">{group.document_number || '-'}</TableCell>
         <TableCell className="whitespace-nowrap">{group.file_name}</TableCell>
         <TableCell className="whitespace-nowrap">{item.status_category}</TableCell>
@@ -575,6 +771,7 @@ export default function Area1DocumentTracking() {
             {statusDesc}
           </span>
         </TableCell>
+        <TableCell className="whitespace-nowrap">{group.pic || '-'}</TableCell>
         <TableCell className="whitespace-nowrap">
           {group.discipline ? DISCIPLINE_ABBREVIATIONS[group.discipline] : '-'}
         </TableCell>
@@ -603,6 +800,9 @@ export default function Area1DocumentTracking() {
         </TableCell>
         <TableCell className="whitespace-nowrap">
           <div className="flex gap-1">
+            <Button variant="ghost" size="sm" onClick={() => openFileDialog(item)} title="Download/Upload Files">
+              <FolderOpen className="h-4 w-4" />
+            </Button>
             {canEditStatus && (
               <Button variant="ghost" size="sm" onClick={() => handleOpenEditDialog(item)}>
                 <Pencil className="h-4 w-4" />
@@ -671,25 +871,49 @@ export default function Area1DocumentTracking() {
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
                   <Checkbox 
-                    id="field-all"
+                    id="a1-field-all"
                     checked={fieldFilter.includes('all')} 
                     onCheckedChange={(checked) => handleFieldFilterChange('all', checked)} 
                   />
-                  <label htmlFor="field-all" className="text-sm cursor-pointer">All</label>
+                  <label htmlFor="a1-field-all" className="text-sm cursor-pointer">All</label>
                 </div>
                 {['Adera', 'Pendopo', 'Ramba'].map((f) => (
                   <div key={f} className="flex items-center space-x-2">
                     <Checkbox 
-                      id={`field-${f}`}
+                      id={`a1-field-${f}`}
                       checked={fieldFilter.includes('all') ? true : fieldFilter.includes(f)} 
                       onCheckedChange={(checked) => handleFieldFilterChange(f, checked)} 
                     />
-                    <label htmlFor={`field-${f}`} className="text-sm cursor-pointer">{f}</label>
+                    <label htmlFor={`a1-field-${f}`} className="text-sm cursor-pointer">{f}</label>
                   </div>
                 ))}
               </div>
             </PopoverContent>
           </Popover>
+        </div>
+        <div className="w-full sm:w-auto">
+          <Label>Filter by Project Name</Label>
+          <Select 
+            value={filteredProjects.length === 0 ? 'no_project' : projectFilter} 
+            onValueChange={setProjectFilter}
+            disabled={filteredProjects.length === 0}
+          >
+            <SelectTrigger className="w-full sm:w-[200px]">
+              <SelectValue placeholder="All Projects" />
+            </SelectTrigger>
+            <SelectContent>
+              {filteredProjects.length === 0 ? (
+                <SelectItem value="no_project">No Project</SelectItem>
+              ) : (
+                <>
+                  <SelectItem value="all">All Projects</SelectItem>
+                  {filteredProjects.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.project_name}</SelectItem>
+                  ))}
+                </>
+              )}
+            </SelectContent>
+          </Select>
         </div>
         <div className="w-full sm:w-auto">
           <Label>Filter by Status Category</Label>
@@ -705,10 +929,27 @@ export default function Area1DocumentTracking() {
             </SelectContent>
           </Select>
         </div>
+        <div className="w-full sm:w-auto">
+          <Label>Filter by PIC</Label>
+          <Select value={picFilter} onValueChange={setPicFilter}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="All PICs" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All PICs</SelectItem>
+              {existingPics.map((existingPic) => (
+                <SelectItem key={existingPic} value={existingPic}>{existingPic}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Dialog open={recapDialogOpen} onOpenChange={setRecapDialogOpen}>
+        <Dialog open={recapDialogOpen} onOpenChange={(open) => {
+          setRecapDialogOpen(open);
+          if (!open) setRecapSelectedProject(null);
+        }}>
           <DialogTrigger asChild>
             <Button variant="outline">
               <Printer className="h-4 w-4 mr-2" />
@@ -719,54 +960,201 @@ export default function Area1DocumentTracking() {
             <DialogHeader>
               <DialogTitle>Data Recap - Area 1 Document Tracking</DialogTitle>
             </DialogHeader>
-            <div className="overflow-auto flex-1">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="whitespace-nowrap">No</TableHead>
-                      <TableHead className="whitespace-nowrap">Field</TableHead>
-                      <TableHead className="whitespace-nowrap">Doc Number</TableHead>
-                      <TableHead className="whitespace-nowrap">File Name</TableHead>
-                      <TableHead className="whitespace-nowrap">DISC</TableHead>
-                      <TableHead className="whitespace-nowrap">IFR</TableHead>
-                      <TableHead className="whitespace-nowrap">IFA</TableHead>
-                      <TableHead className="whitespace-nowrap">IFB</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {getRecapData().map((item, index) => (
-                      <TableRow key={item.file_name}>
-                        <TableCell className="whitespace-nowrap">{index + 1}</TableCell>
-                        <TableCell className="whitespace-nowrap">{item.field || 'Adera'}</TableCell>
-                        <TableCell className="whitespace-nowrap">{item.document_number || '-'}</TableCell>
-                        <TableCell className="whitespace-nowrap">{item.file_name}</TableCell>
-                        <TableCell className="whitespace-nowrap">
-                          {item.discipline ? DISCIPLINE_ABBREVIATIONS[item.discipline as DisciplineType] : '-'}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap">
-                          <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(item.status_ifr)}`}>
-                            {item.status_ifr}
-                          </span>
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap">
-                          <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(item.status_ifa)}`}>
-                            {item.status_ifa}
-                          </span>
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap">
-                          <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(item.status_ifb)}`}>
-                            {item.status_ifb}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+            {recapSelectedProject === null ? (
+              <div className="space-y-2 mt-4 overflow-auto flex-1">
+                <Button variant="outline" className="w-full justify-start font-semibold" onClick={() => setRecapSelectedProject('all')}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  View All Projects
+                </Button>
+                {filteredProjects.map(p => (
+                  <Button key={p.id} variant="outline" className="w-full justify-start"
+                    onClick={() => setRecapSelectedProject(p.id)}>
+                    <FolderOpen className="h-4 w-4 mr-2" />
+                    {p.project_name}
+                  </Button>
+                ))}
               </div>
-            </div>
+            ) : (
+              <div className="flex flex-col flex-1 overflow-hidden mt-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <Button variant="ghost" size="sm" onClick={() => setRecapSelectedProject(null)}>
+                    ← Back to Projects
+                  </Button>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {recapSelectedProject === 'all' ? 'All Projects' : filteredProjects.find(p => p.id === recapSelectedProject)?.project_name || ''}
+                  </span>
+                </div>
+                <div className="overflow-auto flex-1">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="whitespace-nowrap">No</TableHead>
+                          <TableHead className="whitespace-nowrap">Field</TableHead>
+                          <TableHead className="whitespace-nowrap">Project Name</TableHead>
+                          <TableHead className="whitespace-nowrap">Doc Number</TableHead>
+                          <TableHead className="whitespace-nowrap">File Name</TableHead>
+                          <TableHead className="whitespace-nowrap">PIC</TableHead>
+                          <TableHead className="whitespace-nowrap">DISC</TableHead>
+                          <TableHead className="whitespace-nowrap">IFR</TableHead>
+                          <TableHead className="whitespace-nowrap">IFA</TableHead>
+                          <TableHead className="whitespace-nowrap">IFB</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {getRecapData(recapSelectedProject).map((item, index) => (
+                          <TableRow key={item.file_name}>
+                            <TableCell className="whitespace-nowrap">{index + 1}</TableCell>
+                            <TableCell className="whitespace-nowrap">{item.field || 'Adera'}</TableCell>
+                            <TableCell className="whitespace-nowrap">{item.project_name || '-'}</TableCell>
+                            <TableCell className="whitespace-nowrap">{item.document_number || '-'}</TableCell>
+                            <TableCell className="whitespace-nowrap">{item.file_name}</TableCell>
+                            <TableCell className="whitespace-nowrap">{item.pic || '-'}</TableCell>
+                            <TableCell className="whitespace-nowrap">
+                              {item.discipline ? DISCIPLINE_ABBREVIATIONS[item.discipline as DisciplineType] : '-'}
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap">
+                              <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(item.status_ifr)}`}>
+                                {item.status_ifr}
+                              </span>
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap">
+                              <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(item.status_ifa)}`}>
+                                {item.status_ifa}
+                              </span>
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap">
+                              <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(item.status_ifb)}`}>
+                                {item.status_ifb}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
+        {(canAddNew || canEditProject) && (
+          <Dialog open={addProjectDialogOpen} onOpenChange={(open) => {
+            setAddProjectDialogOpen(open);
+            if (!open) {
+              setEditingProjectId(null);
+              setEditingProjectName('');
+              setDeleteProjectConfirmId(null);
+            }
+          }}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <FolderOpen className="h-4 w-4 mr-2" />
+                Manage Projects
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md max-h-[85vh] flex flex-col">
+              <DialogHeader>
+                <DialogTitle>Manage Projects</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 overflow-y-auto flex-1 pr-2">
+                {canAddNew && (
+                  <div className="space-y-3 border-b pb-4">
+                    <Label className="text-sm font-semibold">Add New Project</Label>
+                    <div>
+                      <Label className="text-xs">Field</Label>
+                      <Select value={newProjectField} onValueChange={(value: FieldType) => setNewProjectField(value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select field" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Adera">Adera</SelectItem>
+                          <SelectItem value="Pendopo">Pendopo</SelectItem>
+                          <SelectItem value="Ramba">Ramba</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Project Name</Label>
+                      <Input value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} placeholder="Enter project name" />
+                    </div>
+                    <Button onClick={handleAddProject} className="w-full" size="sm">
+                      <Plus className="h-4 w-4 mr-1" /> Add Project
+                    </Button>
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Existing Projects</Label>
+                  {projects.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No projects yet.</p>
+                  ) : (
+                    <div className="space-y-1">
+                      {projects.map((p) => (
+                        <div key={p.id} className="flex items-center gap-2 p-2 rounded-md border bg-muted/30">
+                          {editingProjectId === p.id ? (
+                            <>
+                              <Input
+                                value={editingProjectName}
+                                onChange={(e) => setEditingProjectName(e.target.value)}
+                                className="h-8 flex-1"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleEditProject(p.id);
+                                  if (e.key === 'Escape') { setEditingProjectId(null); setEditingProjectName(''); }
+                                }}
+                              />
+                              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleEditProject(p.id)}>
+                                <Check className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditingProjectId(null); setEditingProjectName(''); }}>
+                                <span className="text-xs">✕</span>
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <div className="flex-1 min-w-0">
+                                <span className="text-sm truncate block">{p.project_name}</span>
+                                <span className="text-xs text-muted-foreground">{p.field || 'Adera'}</span>
+                              </div>
+                              {canEditProject && (
+                                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditingProjectId(p.id); setEditingProjectName(p.project_name); }}>
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                              {canDeleteProject && (
+                                <AlertDialog open={deleteProjectConfirmId === p.id} onOpenChange={(open) => setDeleteProjectConfirmId(open ? p.id : null)}>
+                                  <AlertDialogTrigger asChild>
+                                    <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive">
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete Project</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to delete "{p.project_name}"? This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => handleDeleteProject(p.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
         {canAddNew && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
@@ -794,12 +1182,68 @@ export default function Area1DocumentTracking() {
                   </Select>
                 </div>
                 <div>
+                  <Label>Project Name</Label>
+                  <Select value={addDataProjectId} onValueChange={setAddDataProjectId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select project" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {addDataFilteredProjects.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.project_name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
                   <Label>File Name</Label>
                   <Input value={fileName} onChange={(e) => setFileName(e.target.value)} placeholder="Enter file name" />
                 </div>
                 <div>
                   <Label>Document Number</Label>
                   <Input value={documentNumber} onChange={(e) => setDocumentNumber(e.target.value)} placeholder="Enter document number" />
+                </div>
+                <div>
+                  <Label>PIC</Label>
+                  <Popover open={picComboOpen} onOpenChange={setPicComboOpen}>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-between">
+                        {pic || "Select or type PIC..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0">
+                      <Command>
+                        <CommandInput 
+                          placeholder="Search or type PIC..." 
+                          value={pic}
+                          onValueChange={(value) => {
+                            setPic(value);
+                          }}
+                        />
+                        <CommandList>
+                          <CommandEmpty>
+                            {pic ? `Use "${pic}" as PIC` : "Type to search..."}
+                          </CommandEmpty>
+                          <CommandGroup>
+                            {existingPics
+                              .filter(existingPic => existingPic.toLowerCase().includes(pic.toLowerCase()))
+                              .map((existingPic) => (
+                                <CommandItem
+                                  key={existingPic}
+                                  value={existingPic}
+                                  onSelect={(value) => {
+                                    setPic(value);
+                                    setPicComboOpen(false);
+                                  }}
+                                >
+                                  {existingPic}
+                                </CommandItem>
+                              ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div>
                   <Label>Discipline</Label>
@@ -811,10 +1255,9 @@ export default function Area1DocumentTracking() {
                       <SelectItem value="Process">Process</SelectItem>
                       <SelectItem value="Mechanical">Mechanical</SelectItem>
                       <SelectItem value="Piping">Piping</SelectItem>
+                      <SelectItem value="Civil">Civil</SelectItem>
                       <SelectItem value="Electrical">Electrical</SelectItem>
                       <SelectItem value="Instrument">Instrument</SelectItem>
-                      <SelectItem value="Civil & Structure">Civil & Structure</SelectItem>
-                      <SelectItem value="Project Management">Project Management</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -863,10 +1306,12 @@ export default function Area1DocumentTracking() {
             <TableHeader>
               <TableRow>
                 <TableHead className="whitespace-nowrap">Field</TableHead>
+                <TableHead className="whitespace-nowrap">Project Name</TableHead>
                 <TableHead className="whitespace-nowrap">Doc Number</TableHead>
                 <TableHead className="whitespace-nowrap min-w-[200px]">File Name</TableHead>
                 <TableHead className="whitespace-nowrap">Category</TableHead>
                 <TableHead className="whitespace-nowrap">Status</TableHead>
+                <TableHead className="whitespace-nowrap">PIC</TableHead>
                 <TableHead className="whitespace-nowrap">DISC</TableHead>
                 <TableHead className="whitespace-nowrap">Target Start</TableHead>
                 <TableHead className="whitespace-nowrap">Actual Start</TableHead>
@@ -958,7 +1403,8 @@ export default function Area1DocumentTracking() {
                     <AlertDialogTitle>Confirm Start Ticket</AlertDialogTitle>
                     <AlertDialogDescription>
                       This will set the status to "Start" and record today as the 
-                      Actual Start date. Are you sure?
+                      Actual Start date. The status will automatically change to 
+                      "In-Progress" after 1 day. Are you sure?
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -1011,6 +1457,56 @@ export default function Area1DocumentTracking() {
                 value={editDocumentNumber}
                 onChange={(e) => setEditDocumentNumber(e.target.value)}
               />
+            </div>
+            <div>
+              <Label>PIC</Label>
+              <Popover open={editPicComboOpen} onOpenChange={setEditPicComboOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={editPicComboOpen}
+                    className="w-full justify-between"
+                  >
+                    {editPic || "Select or type PIC..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0">
+                  <Command>
+                    <CommandInput
+                      placeholder="Search or type new PIC..."
+                      value={editPic}
+                      onValueChange={setEditPic}
+                    />
+                    <CommandList>
+                      <CommandEmpty>
+                        {editPic ? `Add "${editPic}" as new PIC` : 'No PIC found'}
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {existingPics.map((existingPic) => (
+                          <CommandItem
+                            key={existingPic}
+                            value={existingPic}
+                            onSelect={(value) => {
+                              setEditPic(value);
+                              setEditPicComboOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                editPic === existingPic ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {existingPic}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
             <div>
               <Label>Discipline</Label>
@@ -1165,6 +1661,15 @@ export default function Area1DocumentTracking() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Document Files Dialog */}
+      <DocumentFilesDialog
+        open={fileDialogOpen}
+        onOpenChange={setFileDialogOpen}
+        item={fileDialogItem}
+        userId={user?.id || ''}
+        userEmail={user?.email || ''}
+      />
     </div>
   );
 }

@@ -30,6 +30,8 @@ export type Database = {
           field: string | null
           file_name: string
           id: string
+          pic: string | null
+          project_id: string | null
           status_category: Database["public"]["Enums"]["status_category"]
           status_description_ifa:
             | Database["public"]["Enums"]["status_description"]
@@ -63,6 +65,8 @@ export type Database = {
           field?: string | null
           file_name: string
           id?: string
+          pic?: string | null
+          project_id?: string | null
           status_category?: Database["public"]["Enums"]["status_category"]
           status_description_ifa?:
             | Database["public"]["Enums"]["status_description"]
@@ -96,6 +100,8 @@ export type Database = {
           field?: string | null
           file_name?: string
           id?: string
+          pic?: string | null
+          project_id?: string | null
           status_category?: Database["public"]["Enums"]["status_category"]
           status_description_ifa?:
             | Database["public"]["Enums"]["status_description"]
@@ -113,6 +119,42 @@ export type Database = {
           target_submit_ifb?: string | null
           target_submit_ifr?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      area1_projects: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          field: string | null
+          finished_at: string | null
+          id: string
+          project_name: string
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          field?: string | null
+          finished_at?: string | null
+          id?: string
+          project_name: string
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          field?: string | null
+          finished_at?: string | null
+          id?: string
+          project_name?: string
+          status?: string | null
+          updated_at?: string
         }
         Relationships: []
       }

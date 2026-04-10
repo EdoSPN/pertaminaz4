@@ -289,6 +289,50 @@ export type Database = {
           },
         ]
       }
+      file_annotations: {
+        Row: {
+          annotation_type: string
+          created_at: string
+          created_by: string
+          created_by_name: string | null
+          data: Json
+          document_file_id: string
+          id: string
+          page_number: number
+          updated_at: string
+        }
+        Insert: {
+          annotation_type: string
+          created_at?: string
+          created_by: string
+          created_by_name?: string | null
+          data: Json
+          document_file_id: string
+          id?: string
+          page_number?: number
+          updated_at?: string
+        }
+        Update: {
+          annotation_type?: string
+          created_at?: string
+          created_by?: string
+          created_by_name?: string | null
+          data?: Json
+          document_file_id?: string
+          id?: string
+          page_number?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "file_annotations_document_file_id_fkey"
+            columns: ["document_file_id"]
+            isOneToOne: false
+            referencedRelation: "document_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       file_comments: {
         Row: {
           comment: string

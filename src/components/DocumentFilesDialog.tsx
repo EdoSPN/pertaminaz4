@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { FolderOpen, Upload, Download, Clock, FileText, Trash2, Loader2 } from 'lucide-react';
+import { FolderOpen, Upload, Download, Clock, FileText, Trash2, Loader2, Eye } from 'lucide-react';
+import { FilePreviewDialog } from '@/components/FilePreviewDialog';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -57,6 +58,8 @@ export function DocumentFilesDialog({
   const [uploading, setUploading] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [previewFile, setPreviewFile] = useState<DocumentFile | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -286,6 +289,7 @@ export function DocumentFilesDialog({
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-auto">
         <DialogHeader>
@@ -356,7 +360,7 @@ export function DocumentFilesDialog({
                   <TableHead>File Name</TableHead>
                   <TableHead>Size</TableHead>
                   <TableHead>Uploaded</TableHead>
-                  <TableHead className="w-16">Actions</TableHead>
+                  <TableHead className="w-24">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -379,14 +383,28 @@ export function DocumentFilesDialog({
                     <TableCell className="text-sm">{formatFileSize(file.file_size)}</TableCell>
                     <TableCell className="text-sm">{formatDate(file.uploaded_at)}</TableCell>
                     <TableCell>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => handleDeleteFile(file)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setPreviewFile(file);
+                            setPreviewOpen(true);
+                          }}
+                          className="h-8 w-8 p-0"
+                          title="Preview"
+                        >
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleDeleteFile(file)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -452,5 +470,14 @@ export function DocumentFilesDialog({
         </div>
       </DialogContent>
     </Dialog>
+
+    <FilePreviewDialog
+      open={previewOpen}
+      onOpenChange={setPreviewOpen}
+      file={previewFile}
+      userId={userId}
+      userEmail={userEmail}
+    />
+  </>
   );
 }

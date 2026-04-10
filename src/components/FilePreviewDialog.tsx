@@ -111,20 +111,21 @@ export function FilePreviewDialog({
         setLoading(false);
       } else if (isOfficeFile(file.file_name)) {
         setIsImage(false);
-        setIsPdf(true);
+        setIsPdf(false);
+        setIsOffice(true);
         setConverting(true);
         try {
           const { data, error } = await supabase.functions.invoke('convert-to-pdf', {
             body: { filePath: file.file_path, bucketName: 'document-tracking-files' },
           });
-          if (error || !data?.convertedPath) {
-            toast.error('Failed to convert document for preview');
+          if (error) {
+            toast.error('Failed to load document preview');
             setFileUrl(null);
+          } else if (data?.useExternalViewer) {
+            setOfficeViewerUrl(data.viewerUrl);
+            setFileUrl(data.signedUrl);
           } else {
-            const { data: urlData } = await supabase.storage
-              .from('document-tracking-files')
-              .createSignedUrl(data.convertedPath, 3600);
-            setFileUrl(urlData?.signedUrl || null);
+            toast.error('Failed to load document preview');
           }
         } catch {
           toast.error('Failed to convert document');

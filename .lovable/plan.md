@@ -1,66 +1,81 @@
 
 
-## Plan: Make Area 1 Feature-Complete (Match Area 2)
+## Plan: File Preview with Drawing and Text Comment Annotations
 
-### Overview
-Area 1 is missing: Project management system, PIC tracking, Project Name filter, DocumentFilesDialog, and Data Recap project selection. The fix is to add the missing database columns/table and rewrite Area1DocumentTracking.tsx as a copy of Area2 adapted for Area 1.
+Scope: Integrates into the existing `DocumentFilesDialog` component used by Area 2 (and later Area 1).
 
 ---
 
 ### Database Migration
 
-**1. Add `project_id` and `pic` columns to `area1_monitoring_data`:**
-```sql
-ALTER TABLE public.area1_monitoring_data ADD COLUMN project_id uuid;
-ALTER TABLE public.area1_monitoring_data ADD COLUMN pic text;
-```
+**New table: `file_annotations`**
 
-**2. Create `area1_projects` table (same structure as `prabumulih_projects`):**
-```sql
-CREATE TABLE public.area1_projects (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  project_name text NOT NULL,
-  field text DEFAULT 'Adera',
-  description text,
-  status text DEFAULT 'Active',
-  created_by uuid NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now(),
-  finished_at timestamptz,
-  CONSTRAINT check_area1_project_field CHECK (field IN ('Adera', 'Pendopo', 'Ramba'))
-);
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid PK | |
+| document_file_id | uuid NOT NULL | References document_files(id) ON DELETE CASCADE |
+| page_number | integer DEFAULT 1 | Page number (1 for images) |
+| annotation_type | text NOT NULL | 'drawing' or 'comment' |
+| data | jsonb NOT NULL | Drawing paths or {x, y, text} for comments |
+| created_by | uuid NOT NULL | |
+| created_by_name | text | Display name |
+| created_at | timestamptz DEFAULT now() | |
+| updated_at | timestamptz DEFAULT now() | |
 
-ALTER TABLE public.area1_projects ENABLE ROW LEVEL SECURITY;
--- Same RLS as prabumulih_projects
-CREATE POLICY "All can view area1 projects" ON public.area1_projects FOR SELECT USING (true);
-CREATE POLICY "Admin/reviewer can insert area1 projects" ON public.area1_projects FOR INSERT WITH CHECK (has_role(auth.uid(), 'admin') OR has_role(auth.uid(), 'reviewer'));
-CREATE POLICY "All except viewer can update area1 projects" ON public.area1_projects FOR UPDATE TO authenticated USING (has_role(auth.uid(), 'admin') OR has_role(auth.uid(), 'reviewer') OR has_role(auth.uid(), 'user') OR has_role(auth.uid(), 'approver'));
-CREATE POLICY "Only admin can delete area1 projects" ON public.area1_projects FOR DELETE USING (has_role(auth.uid(), 'admin'));
-```
+**RLS**: All authenticated can SELECT; users can INSERT/UPDATE/DELETE their own; admins can DELETE any.
 
 ---
 
-### File Change: `src/pages/Area1DocumentTracking.tsx`
+### Edge Function: `convert-to-pdf`
 
-**Full rewrite** -- copy Area2DocumentTracking.tsx with these substitutions:
-
-| Area 2 Value | Area 1 Value |
-|---|---|
-| `prabumulih_monitoring_data` | `area1_monitoring_data` |
-| `prabumulih_projects` | `area1_projects` |
-| `'Limau' \| 'OK - RT' \| 'Prabumulih'` | `'Adera' \| 'Pendopo' \| 'Ramba'` |
-| Default field `'Prabumulih'` | `'Adera'` |
-| Title "Area 2 - Document Tracking" | "Area 1 - Document Tracking" |
-| Component name `Area2DocumentTracking` | `Area1DocumentTracking` |
-
-All features preserved: Manage Projects dialog, Project Name filter, PIC filter/combobox, DocumentFilesDialog, Data Recap with project selection, field multi-select filter.
+- Accepts a storage file path for Office documents (DOCX, XLSX, PPTX)
+- Uses LibreOffice headless to convert to PDF
+- Uploads converted PDF back to storage, returns the path
+- For PDF and image files, no conversion needed (handled client-side)
 
 ---
 
-### Summary
+### New Components
 
-| Area | Change |
-|---|---|
-| Database | Add `project_id` + `pic` to `area1_monitoring_data`; create `area1_projects` table with RLS |
-| `Area1DocumentTracking.tsx` | Full rewrite as copy of Area 2 with Area 1 table/field names |
+**1. `src/components/FilePreviewDialog.tsx`**
+- Full-screen dialog opened from DocumentFilesDialog
+- Renders PDFs page-by-page using `react-pdf`, images with `<img>`
+- Office docs: calls `convert-to-pdf` edge function first, then renders as PDF
+- Toolbar: Draw mode, Comment mode, color picker, undo, save
+- Page navigation for multi-page PDFs
+- Loads and displays all users' annotations
+
+**2. `src/components/DrawingCanvas.tsx`**
+- HTML5 Canvas overlay on each page
+- Freehand drawing with configurable color/width
+- Serializes stroke paths as JSON for database storage
+- Renders other users' drawings as read-only (different colors)
+
+**3. `src/components/TextAnnotation.tsx`**
+- Click-to-place comment pins on the document
+- Popover shows comment text, author, timestamp
+- Users can add/edit/delete their own comments
+
+---
+
+### Integration
+
+In `DocumentFilesDialog.tsx`, add an "Eye" (preview) icon button on each file row. Clicking opens `FilePreviewDialog` with that file.
+
+---
+
+### Dependencies
+
+- `react-pdf` (pdf.js wrapper for rendering PDFs)
+- No additional annotation libraries -- custom canvas + positioned comments
+
+---
+
+### Technical Details
+
+- Annotations are per-page, per-file, stored as JSONB
+- Drawing data format: `{ strokes: [{ points: [{x,y}], color, width }] }`
+- Comment data format: `{ x, y, text }`
+- All annotations are shared -- every user sees everyone's markings
+- Canvas coordinates are normalized to document dimensions for consistent rendering at any zoom level
 

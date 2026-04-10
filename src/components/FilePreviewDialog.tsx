@@ -424,6 +424,15 @@ export function FilePreviewDialog({
             <div className="flex items-center justify-center h-full">
               <p className="text-muted-foreground">Unable to load file preview</p>
             </div>
+          ) : isOffice && officeViewerUrl ? (
+            <div className="w-full h-full">
+              <iframe
+                src={officeViewerUrl}
+                className="w-full h-full border-0"
+                style={{ minHeight: '70vh' }}
+                title="Document Preview"
+              />
+            </div>
           ) : (
             <div className="relative inline-block" style={{ width: pageWidth, height: pageHeight }}>
               {isPdf && (

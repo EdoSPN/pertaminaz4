@@ -58,6 +58,8 @@ export function DocumentFilesDialog({
   const [uploading, setUploading] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [previewFile, setPreviewFile] = useState<DocumentFile | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {

@@ -66,6 +66,8 @@ export function FilePreviewDialog({
   const [saving, setSaving] = useState(false);
   const [isImage, setIsImage] = useState(false);
   const [isPdf, setIsPdf] = useState(false);
+  const [isOffice, setIsOffice] = useState(false);
+  const [officeViewerUrl, setOfficeViewerUrl] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const isOfficeFile = useCallback((fileName: string) => {

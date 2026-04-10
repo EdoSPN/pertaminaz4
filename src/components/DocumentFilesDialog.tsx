@@ -359,7 +359,7 @@ export function DocumentFilesDialog({
                   <TableHead>File Name</TableHead>
                   <TableHead>Size</TableHead>
                   <TableHead>Uploaded</TableHead>
-                  <TableHead className="w-16">Actions</TableHead>
+                  <TableHead className="w-24">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

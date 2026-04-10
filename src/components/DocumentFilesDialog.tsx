@@ -382,14 +382,28 @@ export function DocumentFilesDialog({
                     <TableCell className="text-sm">{formatFileSize(file.file_size)}</TableCell>
                     <TableCell className="text-sm">{formatDate(file.uploaded_at)}</TableCell>
                     <TableCell>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => handleDeleteFile(file)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setPreviewFile(file);
+                            setPreviewOpen(true);
+                          }}
+                          className="h-8 w-8 p-0"
+                          title="Preview"
+                        >
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleDeleteFile(file)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

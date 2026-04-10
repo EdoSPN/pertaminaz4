@@ -469,5 +469,14 @@ export function DocumentFilesDialog({
         </div>
       </DialogContent>
     </Dialog>
+
+    <FilePreviewDialog
+      open={previewOpen}
+      onOpenChange={setPreviewOpen}
+      file={previewFile}
+      userId={userId}
+      userEmail={userEmail}
+    />
+  </>
   );
 }

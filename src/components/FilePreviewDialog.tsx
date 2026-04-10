@@ -90,6 +90,10 @@ export function FilePreviewDialog({
     setDrawingsByPage({});
     setCommentsByPage({});
     setToolMode('none');
+    setIsImage(false);
+    setIsPdf(false);
+    setIsOffice(false);
+    setOfficeViewerUrl(null);
 
     const loadFile = async () => {
       if (isImageFile(file.file_name)) {
